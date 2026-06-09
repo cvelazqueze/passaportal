@@ -4,6 +4,10 @@ import {
   applyEmailVisibility,
   type ResumeSelection,
 } from "./resume-selection";
+import {
+  normalizeDisplayName,
+  type ResumeCustomizations,
+} from "./resume-customizations";
 
 type PassportInput = {
   professionalTitle: string | null;
@@ -54,7 +58,8 @@ type PassportInput = {
 export function buildResumeData(
   user: { firstName: string; lastName: string; email: string },
   passport: PassportInput,
-  selection?: ResumeSelection | null
+  selection?: ResumeSelection | null,
+  customizations?: ResumeCustomizations | null
 ): ResumeData {
   const normalized = {
     ...passport,
@@ -63,9 +68,12 @@ export function buildResumeData(
   };
   const filtered = applyResumeSelection(normalized, selection);
 
+  const displayName = normalizeDisplayName(customizations?.displayName);
+
   return {
     firstName: user.firstName,
     lastName: user.lastName,
+    displayName,
     email: applyEmailVisibility(user.email, selection),
     phone: filtered.phone,
     linkedIn: filtered.linkedIn,

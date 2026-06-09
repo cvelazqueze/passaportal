@@ -465,6 +465,9 @@ export const esDict: Dictionary = {
     contactEmpty: "No configurado en el perfil",
     tailoredBadge: "Adaptado",
     fullProfileBadge: "Perfil completo",
+    cvDisplayName: "Nombre en el CV",
+    cvDisplayNameHint:
+      "Solo aparece en este currículum. Déjalo vacío para usar tu nombre de cuenta ({name}).",
     contentSaved: "Contenido del currículum actualizado",
     contentSaveFailed: "Error al guardar el contenido",
     selectAtLeastOne: "Selecciona al menos un ítem por sección activa",

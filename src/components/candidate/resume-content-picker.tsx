@@ -9,6 +9,8 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { VisibilityToggle } from "@/components/ui/visibility-toggle";
 import { Loader2, Save } from "lucide-react";
@@ -37,6 +39,9 @@ interface ContactFieldItem {
 interface ResumeContentPickerProps {
   resumeId: string;
   resumeName: string;
+  registeredName: string;
+  displayName: string;
+  onDisplayNameChange: (value: string) => void;
   selection: ResumeSelection;
   onSelectionChange: (selection: ResumeSelection) => void;
   onSaved: (selection: ResumeSelection) => void;
@@ -163,6 +168,9 @@ function buildItemSelection(
 export function ResumeContentPicker({
   resumeId,
   resumeName,
+  registeredName,
+  displayName,
+  onDisplayNameChange,
   selection,
   onSelectionChange,
   onSaved,
@@ -311,7 +319,12 @@ export function ResumeContentPicker({
       const res = await fetch(`/api/candidate/resumes/${resumeId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ includedSections: selection }),
+        body: JSON.stringify({
+          includedSections: selection,
+          customizations: {
+            displayName: displayName.trim() || null,
+          },
+        }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error ?? h.contentSaveFailed);
@@ -367,6 +380,21 @@ export function ResumeContentPicker({
             {error || h.contentSaved}
           </p>
         )}
+
+        <div className="mb-4 rounded-lg border bg-card p-3">
+          <Label htmlFor={`cv-display-name-${resumeId}`}>{h.cvDisplayName}</Label>
+          <Input
+            id={`cv-display-name-${resumeId}`}
+            className="mt-2"
+            value={displayName}
+            onChange={(e) => onDisplayNameChange(e.target.value)}
+            placeholder={registeredName}
+            maxLength={120}
+          />
+          <p className="mt-2 text-xs text-muted-foreground">
+            {h.cvDisplayNameHint.replace("{name}", registeredName)}
+          </p>
+        </div>
 
         <div
           className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:[grid-template-columns:repeat(var(--resume-cols),minmax(0,1fr))]"

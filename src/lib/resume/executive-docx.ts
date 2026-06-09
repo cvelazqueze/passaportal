@@ -1,6 +1,7 @@
 import type { ResumeData } from "./types";
 import type { Dictionary, Locale } from "@/lib/i18n";
 import { formatResumeDate, presentLabel } from "./format";
+import { formatResumeName } from "./format-resume-name";
 
 const FONT = "Georgia";
 
@@ -27,7 +28,7 @@ export async function generateExecutiveDocx(
       spacing: { after: 80 },
       children: [
         new TextRun({
-          text: `${data.firstName.toUpperCase()} ${data.lastName.toUpperCase()}`,
+          text: formatResumeName(data, { uppercase: true }),
           font: FONT,
           size: 36,
           bold: true,

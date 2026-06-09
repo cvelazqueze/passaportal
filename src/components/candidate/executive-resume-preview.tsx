@@ -4,6 +4,7 @@ import {
   formatResumeDate,
   presentLabel,
 } from "@/lib/resume/format";
+import { formatResumeName } from "@/lib/resume/format-resume-name";
 import shared from "./resume-preview-shared.module.css";
 import styles from "./executive-resume-preview.module.css";
 
@@ -54,7 +55,7 @@ export function ExecutiveResumePreview({
           <div className={styles.content}>
             <header className={styles.header}>
               <h1 className={styles.name}>
-                {data.firstName} {data.lastName}
+                {formatResumeName(data)}
               </h1>
               {data.professionalTitle && (
                 <p className={styles.title}>{data.professionalTitle}</p>

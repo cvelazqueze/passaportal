@@ -167,12 +167,17 @@ npm run test:e2e
 | `DATABASE_URL` | Neon **pooled** URL (`*-pooler` host) |
 | `DATABASE_URL_UNPOOLED` | Neon **unpooled** URL (`DATABASE_URL_UNPOOLED`) |
 
-Also set: `AUTH_SECRET`, `AUTH_URL` (your Vercel URL), `ENCRYPTION_KEY`, `NODE_ENV=production`.
+Also set: `AUTH_SECRET`, `AUTH_URL` (your Vercel URL), `ENCRYPTION_KEY`.
 
-If Vercel injects `POSTGRES_PRISMA_URL` / `POSTGRES_URL_NON_POOLING` only, duplicate them:
+**Important — remove bad vars from Vercel:**
 
-- `DATABASE_URL` = `POSTGRES_PRISMA_URL`
-- `DATABASE_URL_UNPOOLED` = `POSTGRES_URL_NON_POOLING`
+- Delete any `DATABASE_URL` that contains `localhost` (often copied from local `.env`)
+- Do **not** set `NODE_ENV=development` on Vercel (Vercel sets production automatically)
+
+If you linked Neon, Vercel may only inject `POSTGRES_PRISMA_URL` and `POSTGRES_URL_NON_POOLING` — the app picks those up automatically. Optionally mirror them:
+
+- `DATABASE_URL` = `POSTGRES_PRISMA_URL` (pooled)
+- `DATABASE_URL_UNPOOLED` = `POSTGRES_URL_NON_POOLING` (unpooled)
 
 4. Apply the schema to the **production** database (from your laptop, one time):
 

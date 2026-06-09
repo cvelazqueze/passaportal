@@ -6,6 +6,7 @@ import { AutoPrint } from "@/components/candidate/auto-print";
 import { ResumePrintToolbar } from "@/components/candidate/resume-print-toolbar";
 import { buildResumeData } from "@/lib/resume/build-resume-data";
 import { parseResumeSelection } from "@/lib/resume/resume-selection";
+import { parseResumeCustomizations } from "@/lib/resume/resume-customizations";
 import { getServerDictionary } from "@/lib/i18n/server";
 import styles from "@/components/candidate/ats-resume-print.module.css";
 import { ResumeTemplate } from "@prisma/client";
@@ -54,7 +55,8 @@ export default async function ResumePrintPage({ searchParams }: PrintPageProps) 
 
   const template = (master?.template ?? ResumeTemplate.ATS) as ResumeTemplate;
   const selection = parseResumeSelection(master?.includedSections);
-  const resumeData = buildResumeData(user, passport, selection);
+  const customizations = parseResumeCustomizations(master?.customizations);
+  const resumeData = buildResumeData(user, passport, selection, customizations);
 
   return (
     <div className={styles.printShell}>

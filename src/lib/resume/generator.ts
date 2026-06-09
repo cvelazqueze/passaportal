@@ -1,6 +1,7 @@
 import { ResumeTemplate } from "@prisma/client";
 import type { ResumeData } from "./types";
 import { generateAtsResume } from "./ats-template";
+import { formatResumeName } from "./format-resume-name";
 
 function formatDate(date: Date): string {
   return new Intl.DateTimeFormat("en-US", {
@@ -66,7 +67,7 @@ function generateTechnicalTemplate(data: ResumeData): string {
 function generateExecutiveTemplate(data: ResumeData): string {
   const sections: string[] = [];
 
-  sections.push(`${data.firstName.toUpperCase()} ${data.lastName.toUpperCase()}`);
+  sections.push(formatResumeName(data, { uppercase: true }));
   if (data.professionalTitle) sections.push(data.professionalTitle);
   sections.push(`${data.email}${data.phone ? ` | ${data.phone}` : ""}${data.city ? ` | ${data.city}` : ""}`);
   sections.push("");

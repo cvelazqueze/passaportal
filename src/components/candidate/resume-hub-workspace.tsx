@@ -19,6 +19,7 @@ import {
   EMPTY_RESUME_SELECTION,
   type ResumeSelection,
 } from "@/lib/resume/resume-selection";
+import { parseResumeCustomizations } from "@/lib/resume/resume-customizations";
 import {
   deserializePassport,
   type SerializedPassport,
@@ -33,6 +34,7 @@ interface ResumeRow {
   template: ResumeTemplate;
   targetRole: string | null;
   includedSections: unknown;
+  customizations: unknown;
 }
 
 interface ResumeHubWorkspaceProps {
@@ -57,18 +59,33 @@ export function ResumeHubWorkspace({
     return map;
   }, [resumes]);
 
+  const initialDisplayNames = useMemo(() => {
+    const map: Record<string, string> = {};
+    for (const r of resumes) {
+      map[r.id] = parseResumeCustomizations(r.customizations).displayName ?? "";
+    }
+    return map;
+  }, [resumes]);
+
   const [activeId, setActiveId] = useState(master?.id ?? "");
   const [selections, setSelections] =
     useState<Record<string, ResumeSelection>>(initialSelections);
+  const [displayNames, setDisplayNames] =
+    useState<Record<string, string>>(initialDisplayNames);
 
   const active = resumes.find((r) => r.id === activeId) ?? master;
   const activeSelection = active ? selections[active.id] : undefined;
 
+  const registeredName = `${user.firstName} ${user.lastName}`.trim();
+
   const previewData = useMemo(() => {
     if (!active || !activeSelection) return null;
     const deserialized = deserializePassport(passport);
-    return buildResumeData(user, deserialized, activeSelection);
-  }, [user, passport, active, activeSelection]);
+    const displayName = displayNames[active.id]?.trim();
+    return buildResumeData(user, deserialized, activeSelection, {
+      displayName: displayName || null,
+    });
+  }, [user, passport, active, activeSelection, displayNames]);
 
   const handleSelectionChange = useCallback(
     (resumeId: string, next: ResumeSelection) => {
@@ -189,6 +206,11 @@ export function ResumeHubWorkspace({
         <ResumeContentPicker
           resumeId={active.id}
           resumeName={active.name}
+          registeredName={registeredName}
+          displayName={displayNames[active.id] ?? ""}
+          onDisplayNameChange={(value) =>
+            setDisplayNames((prev) => ({ ...prev, [active.id]: value }))
+          }
           selection={activeSelection ?? EMPTY_RESUME_SELECTION}
           onSelectionChange={(next) => handleSelectionChange(active.id, next)}
           onSaved={(saved) => handleSaved(active.id, saved)}

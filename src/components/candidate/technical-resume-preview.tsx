@@ -6,6 +6,7 @@ import {
   getSkillList,
   presentLabel,
 } from "@/lib/resume/format";
+import { formatResumeName } from "@/lib/resume/format-resume-name";
 import shared from "./resume-preview-shared.module.css";
 import styles from "./technical-resume-preview.module.css";
 
@@ -44,7 +45,7 @@ export function TechnicalResumePreview({
           <div className={styles.content}>
             <aside className={styles.sidebar}>
               <h1 className={styles.name}>
-                {data.firstName} {data.lastName}
+                {formatResumeName(data)}
               </h1>
               {data.professionalTitle && (
                 <p className={styles.title}>{data.professionalTitle}</p>

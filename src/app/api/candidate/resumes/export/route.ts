@@ -3,6 +3,7 @@ import { requireCandidateProfile } from "@/lib/candidate/context";
 import { apiError } from "@/lib/api/error";
 import { buildResumeData } from "@/lib/resume/build-resume-data";
 import { parseResumeSelection } from "@/lib/resume/resume-selection";
+import { parseResumeCustomizations } from "@/lib/resume/resume-customizations";
 import { generateDocx } from "@/lib/resume/generator";
 import { db } from "@/lib/db";
 import { getServerLocale } from "@/lib/i18n/server";
@@ -62,7 +63,8 @@ export async function GET(request: Request) {
     const resumeVersion = await resolveMasterResume(passport.id, resumeId);
     const template = resumeVersion?.template ?? "ATS";
     const selection = parseResumeSelection(resumeVersion?.includedSections);
-    const resumeData = buildResumeData(user, fullPassport, selection);
+    const customizations = parseResumeCustomizations(resumeVersion?.customizations);
+    const resumeData = buildResumeData(user, fullPassport, selection, customizations);
     const baseName = sanitizeFilename(
       resumeVersion?.name ?? `${user.firstName}_${user.lastName}_Resume`
     );

@@ -6,6 +6,7 @@ import {
   getSkillList,
   presentLabel,
 } from "@/lib/resume/format";
+import { formatResumeName } from "@/lib/resume/format-resume-name";
 import shared from "./resume-preview-shared.module.css";
 import styles from "./modern-resume-preview.module.css";
 
@@ -44,7 +45,7 @@ export function ModernResumePreview({
         <article className={shared.paper} aria-label="Modern resume preview">
           <header className={styles.header}>
             <h1 className={styles.headerName}>
-              {data.firstName} {data.lastName}
+              {formatResumeName(data)}
             </h1>
             {data.professionalTitle && (
               <p className={styles.headerTitle}>{data.professionalTitle}</p>

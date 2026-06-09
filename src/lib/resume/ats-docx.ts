@@ -1,5 +1,6 @@
 import type { ResumeData } from "./types";
 import { buildAdditionalInfo, formatAtsDate, formatContactLine } from "./ats-format";
+import { formatResumeName } from "./format-resume-name";
 
 const FONT = "Calibri";
 const BODY_SIZE = 21; // half-points (10.5pt)
@@ -34,7 +35,7 @@ export async function generateAtsDocx(data: ResumeData): Promise<Buffer> {
       spacing: { after: 80 },
       children: [
         new TextRun({
-          text: `${data.firstName.toUpperCase()} ${data.lastName.toUpperCase()}`,
+          text: formatResumeName(data, { uppercase: true }),
           font: FONT,
           size: NAME_SIZE,
           bold: true,

@@ -93,6 +93,7 @@ export default async function ResumeHubPage() {
             template: r.template,
             targetRole: r.targetRole,
             includedSections: r.includedSections,
+            customizations: r.customizations,
           }))}
         />
 

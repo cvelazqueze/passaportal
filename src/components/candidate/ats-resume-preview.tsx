@@ -6,6 +6,7 @@ import {
   formatResumeDate,
   presentLabel,
 } from "@/lib/resume/format";
+import { formatResumeName } from "@/lib/resume/format-resume-name";
 import shared from "./resume-preview-shared.module.css";
 import styles from "./ats-resume-preview.module.css";
 
@@ -93,7 +94,7 @@ export function AtsResumePreview({
           <div className={styles.content}>
             <header>
               <h1 className={styles.name}>
-                {data.firstName.toUpperCase()} {data.lastName.toUpperCase()}
+                {formatResumeName(data, { uppercase: true })}
               </h1>
               {data.professionalTitle && (
                 <p className={styles.title}>{data.professionalTitle}</p>

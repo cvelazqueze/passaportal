@@ -1,6 +1,8 @@
 export interface ResumeData {
   firstName: string;
   lastName: string;
+  /** Optional name shown on the CV; falls back to first + last name from the account. */
+  displayName?: string | null;
   email: string;
   phone?: string | null;
   linkedIn?: string | null;

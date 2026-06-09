@@ -447,6 +447,9 @@ export const enDict = {
     contactEmpty: "Not set in profile",
     tailoredBadge: "Tailored",
     fullProfileBadge: "Full profile",
+    cvDisplayName: "Name on CV",
+    cvDisplayNameHint:
+      "Shown on this resume only. Leave blank to use your account name ({name}).",
     contentSaved: "Resume content updated",
     contentSaveFailed: "Failed to save resume content",
     selectAtLeastOne: "Select at least one item per enabled section",

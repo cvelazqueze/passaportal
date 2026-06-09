@@ -3,12 +3,17 @@ import { db } from "@/lib/db";
 import { requireCandidateProfile } from "@/lib/candidate/context";
 import { apiError } from "@/lib/api/error";
 import { resumeSelectionSchema } from "@/lib/resume/resume-selection";
+import {
+  mergeResumeCustomizations,
+  resumeCustomizationsSchema,
+} from "@/lib/resume/resume-customizations";
 import { z } from "zod";
 
 const patchSchema = z.object({
   name: z.string().min(1).optional(),
   targetRole: z.string().nullable().optional(),
   includedSections: resumeSelectionSchema.optional(),
+  customizations: resumeCustomizationsSchema.optional(),
 });
 
 export async function PATCH(
@@ -39,6 +44,14 @@ export async function PATCH(
       );
     }
 
+    const customizations =
+      parsed.data.customizations !== undefined
+        ? mergeResumeCustomizations(
+            existing.customizations,
+            parsed.data.customizations
+          )
+        : undefined;
+
     const resume = await db.resumeVersion.update({
       where: { id },
       data: {
@@ -48,6 +61,9 @@ export async function PATCH(
           : {}),
         ...(parsed.data.includedSections !== undefined
           ? { includedSections: parsed.data.includedSections }
+          : {}),
+        ...(customizations !== undefined
+          ? { customizations }
           : {}),
       },
     });

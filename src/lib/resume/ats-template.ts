@@ -1,5 +1,6 @@
 import type { ResumeData } from "./types";
 import { buildAdditionalInfo, formatAtsDate, formatContactLine } from "./ats-format";
+import { formatResumeName } from "./format-resume-name";
 
 /**
  * ATS-friendly template modeled after standard one-column resumes:
@@ -9,7 +10,7 @@ import { buildAdditionalInfo, formatAtsDate, formatContactLine } from "./ats-for
 export function generateAtsResume(data: ResumeData): string {
   const lines: string[] = [];
 
-  lines.push(`${data.firstName.toUpperCase()} ${data.lastName.toUpperCase()}`);
+  lines.push(formatResumeName(data, { uppercase: true }));
   if (data.professionalTitle) {
     lines.push(data.professionalTitle);
   }
