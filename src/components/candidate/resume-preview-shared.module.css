@@ -1,0 +1,119 @@
+.sharedCanvas {
+  background: hsl(var(--muted) / 0.45);
+  border-radius: 0.5rem;
+  padding: 1.5rem;
+  overflow-x: auto;
+}
+
+:global(.dark) .sharedCanvas {
+  background: #18181b;
+}
+
+.printCanvas {
+  background: #e8e8e8;
+  padding: 1.5rem;
+  overflow-x: auto;
+}
+
+:global(.dark) .printCanvas {
+  background: #18181b;
+}
+
+.paper {
+  position: relative;
+  width: 8.5in;
+  max-width: 100%;
+  margin: 0 auto;
+  background: #ffffff !important;
+  color: #111111 !important;
+  color-scheme: only light;
+  box-shadow:
+    0 1px 3px rgb(0 0 0 / 12%),
+    0 8px 24px rgb(0 0 0 / 10%);
+  font-family: Calibri, "Segoe UI", Arial, sans-serif;
+  font-size: 10.5pt;
+  line-height: 1.32;
+}
+
+:global(.dark) .paper {
+  box-shadow:
+    0 1px 3px rgb(0 0 0 / 35%),
+    0 8px 32px rgb(0 0 0 / 45%);
+}
+
+.content {
+  position: relative;
+  z-index: 1;
+  padding: 0.5in 0.58in 0.55in;
+}
+
+.pageGuides {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent 0,
+    transparent calc(11in - 1px),
+    rgb(0 0 0 / 8%) calc(11in - 1px),
+    rgb(0 0 0 / 8%) 11in
+  );
+}
+
+.pageLabel {
+  position: absolute;
+  right: 0.35in;
+  font-size: 8pt;
+  color: rgb(0 0 0 / 35%);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.empty {
+  padding: 2rem;
+  text-align: center;
+  color: hsl(var(--muted-foreground));
+  font-size: 0.875rem;
+}
+
+.bulletList {
+  margin: 0;
+  padding: 0 0 0 0.14in;
+  list-style: none;
+}
+
+.bullet {
+  position: relative;
+  margin-bottom: 0.04in;
+  padding-left: 0.12in;
+  font-size: 10pt;
+  text-align: justify;
+}
+
+.bullet::before {
+  content: "●";
+  position: absolute;
+  left: 0;
+  font-size: 7pt;
+  top: 0.12em;
+}
+
+@media print {
+  .sharedCanvas,
+  .printCanvas {
+    background: none;
+    padding: 0;
+  }
+
+  .paper {
+    box-shadow: none;
+    width: 100%;
+    max-width: none;
+  }
+
+  .pageGuides {
+    display: none;
+  }
+}

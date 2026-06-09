@@ -1,0 +1,274 @@
+.canvas {
+  background: hsl(var(--muted) / 0.45);
+  border-radius: 0.5rem;
+  padding: 1.5rem;
+  overflow-x: auto;
+}
+
+:global(.dark) .canvas {
+  background: #18181b;
+}
+
+.paper {
+  position: relative;
+  width: 8.5in;
+  max-width: 100%;
+  margin: 0 auto;
+  background: #ffffff !important;
+  color: #111111 !important;
+  color-scheme: only light;
+  box-shadow:
+    0 1px 3px rgb(0 0 0 / 12%),
+    0 8px 24px rgb(0 0 0 / 10%);
+  font-family: Calibri, "Segoe UI", Arial, sans-serif;
+  font-size: 10.5pt;
+  line-height: 1.32;
+}
+
+:global(.dark) .paper {
+  box-shadow:
+    0 1px 3px rgb(0 0 0 / 35%),
+    0 8px 32px rgb(0 0 0 / 45%);
+}
+
+.content {
+  position: relative;
+  z-index: 1;
+  padding: 0.5in 0.58in 0.55in;
+}
+
+.pageGuides {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent 0,
+    transparent calc(11in - 1px),
+    rgb(0 0 0 / 8%) calc(11in - 1px),
+    rgb(0 0 0 / 8%) 11in
+  );
+}
+
+.pageLabel {
+  position: absolute;
+  right: 0.35in;
+  font-size: 8pt;
+  color: rgb(0 0 0 / 35%);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.name {
+  font-size: 15pt;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  line-height: 1.15;
+  margin: 0 0 0.12in;
+}
+
+.title {
+  font-size: 11pt;
+  font-weight: 600;
+  margin: 0 0 0.08in;
+}
+
+.contact {
+  font-size: 9.5pt;
+  margin: 0 0 0.22in;
+  word-break: break-word;
+}
+
+.sectionTitle {
+  font-size: 10.5pt;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  margin: 0.18in 0 0.1in;
+  padding-bottom: 0.04in;
+  border-bottom: 1px solid #222;
+}
+
+.experienceBlock {
+  margin-bottom: 0.14in;
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+.experienceHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.2in;
+  margin-bottom: 0.03in;
+}
+
+.company {
+  font-size: 10.5pt;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  flex: 1;
+  min-width: 0;
+}
+
+.dates {
+  font-size: 9.5pt;
+  font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.position {
+  font-size: 10pt;
+  font-weight: 600;
+  margin: 0 0 0.05in;
+}
+
+.bulletList {
+  margin: 0;
+  padding: 0 0 0 0.14in;
+  list-style: none;
+}
+
+.bullet {
+  position: relative;
+  margin-bottom: 0.04in;
+  padding-left: 0.12in;
+  font-size: 10pt;
+  text-align: justify;
+}
+
+.bullet::before {
+  content: "●";
+  position: absolute;
+  left: 0;
+  font-size: 7pt;
+  top: 0.12em;
+}
+
+.eduBlock {
+  margin-bottom: 0.12in;
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+.eduInstitution {
+  font-size: 10.5pt;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+}
+
+.eduRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.2in;
+}
+
+.eduDegree {
+  font-size: 10pt;
+  font-weight: 600;
+}
+
+.additionalList {
+  margin: 0;
+  padding: 0 0 0 0.14in;
+  list-style: none;
+}
+
+.additionalItem {
+  position: relative;
+  margin-bottom: 0.05in;
+  padding-left: 0.12in;
+  font-size: 10pt;
+}
+
+.additionalItem::before {
+  content: "●";
+  position: absolute;
+  left: 0;
+  font-size: 7pt;
+  top: 0.12em;
+}
+
+.empty {
+  padding: 2rem;
+  text-align: center;
+  color: hsl(var(--muted-foreground));
+  font-size: 0.875rem;
+}
+
+@media (max-width: 900px) {
+  .paper {
+    width: 100%;
+    font-size: 10pt;
+  }
+
+  .content {
+    padding: 1.25rem 1rem 1.5rem;
+  }
+
+  .pageGuides {
+    display: none;
+  }
+}
+
+.printCanvas {
+  background: #e8e8e8;
+  padding: 1.5rem;
+  overflow-x: auto;
+}
+
+:global(.dark) .printCanvas {
+  background: #18181b;
+}
+
+@media print {
+  @page {
+    size: letter;
+    margin: 0.5in 0.58in 0.55in;
+  }
+
+  .printCanvas {
+    background: none;
+    padding: 0;
+  }
+
+  .printCanvas .paper {
+    box-shadow: none;
+    width: 100%;
+    max-width: none;
+    font-size: 10.5pt;
+  }
+
+  .printCanvas .content {
+    padding: 0;
+  }
+
+  .canvas {
+    background: none;
+    padding: 0;
+  }
+
+  .paper {
+    box-shadow: none;
+    width: 100%;
+    max-width: none;
+  }
+
+  .pageGuides {
+    display: none;
+  }
+
+  .experienceBlock,
+  .eduBlock {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .sectionTitle {
+    break-after: avoid;
+    page-break-after: avoid;
+  }
+}

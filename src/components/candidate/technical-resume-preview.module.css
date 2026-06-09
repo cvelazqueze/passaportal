@@ -1,0 +1,153 @@
+.content {
+  display: flex;
+  gap: 0.35in;
+  padding: 0.45in 0.5in 0.5in;
+}
+
+.sidebar {
+  width: 2in;
+  flex-shrink: 0;
+  border-right: 1px solid #ddd;
+  padding-right: 0.25in;
+}
+
+.main {
+  flex: 1;
+  min-width: 0;
+}
+
+.name {
+  font-size: 14pt;
+  font-weight: 700;
+  line-height: 1.15;
+  margin: 0 0 0.08in;
+}
+
+.title {
+  font-size: 10pt;
+  font-weight: 600;
+  color: #2563eb;
+  margin: 0 0 0.14in;
+}
+
+.sidebarSection {
+  margin-bottom: 0.18in;
+}
+
+.sidebarTitle {
+  font-size: 9pt;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #2563eb;
+  margin: 0 0 0.06in;
+  padding-bottom: 0.03in;
+  border-bottom: 1px solid #2563eb;
+}
+
+.sidebarText {
+  font-size: 9pt;
+  line-height: 1.35;
+  margin: 0;
+  word-break: break-word;
+}
+
+.skillTag {
+  display: inline-block;
+  font-size: 8.5pt;
+  background: #eff6ff;
+  color: #1e40af;
+  padding: 0.02in 0.06in;
+  margin: 0 0.04in 0.04in 0;
+  border-radius: 2px;
+}
+
+.sectionTitle {
+  font-size: 10.5pt;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #111;
+  margin: 0.14in 0 0.08in;
+  padding-bottom: 0.03in;
+  border-bottom: 2px solid #2563eb;
+}
+
+.sectionTitle:first-child {
+  margin-top: 0;
+}
+
+.experienceBlock {
+  margin-bottom: 0.12in;
+  break-inside: avoid;
+}
+
+.expHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.15in;
+}
+
+.position {
+  font-size: 10.5pt;
+  font-weight: 700;
+  margin: 0;
+}
+
+.company {
+  font-size: 10pt;
+  font-weight: 600;
+  color: #374151;
+  margin: 0.02in 0 0.04in;
+}
+
+.dates {
+  font-size: 9pt;
+  color: #4b5563;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.techLine {
+  font-size: 9pt;
+  font-style: italic;
+  color: #4b5563;
+  margin: 0 0 0.04in;
+}
+
+.eduBlock {
+  margin-bottom: 0.1in;
+}
+
+.eduDegree {
+  font-size: 10pt;
+  font-weight: 600;
+  margin: 0;
+}
+
+.eduSchool {
+  font-size: 9.5pt;
+  color: #374151;
+  margin: 0.02in 0 0;
+}
+
+@media (max-width: 900px) {
+  .content {
+    flex-direction: column;
+    padding: 1.25rem 1rem;
+  }
+
+  .sidebar {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid #ddd;
+    padding-right: 0;
+    padding-bottom: 1rem;
+  }
+}
+
+@media print {
+  .content {
+    padding: 0;
+  }
+}

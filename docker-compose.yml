@@ -1,0 +1,84 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: talentos-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: talentos
+      POSTGRES_PASSWORD: talentos_secret
+      POSTGRES_DB: talentos
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U talentos -d talentos"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: talentos-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: talentos-app
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: postgresql://talentos:talentos_secret@postgres:5432/talentos?schema=public
+      AUTH_SECRET: ${AUTH_SECRET:-dev-secret-change-in-production-min-32-chars}
+      AUTH_URL: http://localhost:3000
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef}
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./uploads:/app/uploads
+
+  app-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: talentos-app-dev
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: postgresql://talentos:talentos_secret@postgres:5432/talentos?schema=public
+      AUTH_SECRET: ${AUTH_SECRET:-dev-secret-change-in-production-min-32-chars}
+      AUTH_URL: http://localhost:3000
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef}
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/.next
+    profiles:
+      - dev
+
+volumes:
+  postgres_data:
+  redis_data:

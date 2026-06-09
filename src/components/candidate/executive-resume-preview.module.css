@@ -1,0 +1,159 @@
+.content {
+  padding: 0.55in 0.65in 0.5in;
+  text-align: center;
+}
+
+.header {
+  margin-bottom: 0.22in;
+  padding-bottom: 0.14in;
+  border-bottom: 2px solid #1a1a1a;
+}
+
+.name {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 20pt;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  margin: 0 0 0.1in;
+  color: #1a1a1a;
+}
+
+.title {
+  font-size: 11pt;
+  font-weight: 500;
+  font-style: italic;
+  color: #374151;
+  margin: 0 0 0.1in;
+}
+
+.contact {
+  font-size: 9.5pt;
+  color: #4b5563;
+  margin: 0;
+  letter-spacing: 0.02em;
+}
+
+.body {
+  text-align: left;
+}
+
+.section {
+  margin-top: 0.2in;
+}
+
+.sectionTitle {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 11pt;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #1a1a1a;
+  margin: 0 0 0.06in;
+  text-align: center;
+}
+
+.sectionRule {
+  border: none;
+  border-top: 1px solid #9ca3af;
+  margin: 0 0 0.14in;
+}
+
+.experienceBlock {
+  margin-bottom: 0.16in;
+  break-inside: avoid;
+}
+
+.expHeader {
+  margin-bottom: 0.05in;
+}
+
+.position {
+  font-size: 11pt;
+  font-weight: 700;
+  margin: 0;
+  color: #111;
+}
+
+.companyLine {
+  font-size: 10pt;
+  color: #374151;
+  margin: 0.03in 0 0.06in;
+}
+
+.companyLine strong {
+  font-weight: 600;
+}
+
+.dates {
+  font-weight: 500;
+}
+
+.bulletList {
+  margin: 0;
+  padding: 0 0 0 0.16in;
+  list-style: none;
+}
+
+.bullet {
+  position: relative;
+  margin-bottom: 0.05in;
+  padding-left: 0.14in;
+  font-size: 10pt;
+  line-height: 1.4;
+  text-align: justify;
+  color: #1f2937;
+}
+
+.bullet::before {
+  content: "▪";
+  position: absolute;
+  left: 0;
+  font-size: 8pt;
+  top: 0.15em;
+  color: #6b7280;
+}
+
+.eduBlock {
+  margin-bottom: 0.08in;
+  text-align: center;
+}
+
+.eduLine {
+  font-size: 10pt;
+  margin: 0;
+  color: #374151;
+}
+
+.eduDegree {
+  font-weight: 600;
+  color: #111;
+}
+
+.certBlock {
+  text-align: center;
+  margin-bottom: 0.06in;
+}
+
+.certLine {
+  font-size: 9.5pt;
+  color: #374151;
+  margin: 0;
+}
+
+@media (max-width: 900px) {
+  .content {
+    padding: 1.25rem 1rem 1.5rem;
+  }
+}
+
+@media print {
+  .content {
+    padding: 0;
+  }
+
+  .sectionRule {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}

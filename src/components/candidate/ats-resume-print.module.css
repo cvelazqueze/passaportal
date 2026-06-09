@@ -1,0 +1,38 @@
+.printShell {
+  min-height: 100vh;
+  background: hsl(var(--background));
+}
+
+.previewArea {
+  background: #e8e8e8;
+  padding: 1.5rem;
+}
+
+:global(.dark) .previewArea {
+  background: #18181b;
+}
+
+.toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.5rem;
+  background: hsl(var(--card));
+  border-bottom: 1px solid hsl(var(--border));
+}
+
+@media print {
+  .printShell {
+    background: #fff;
+  }
+
+  .previewArea {
+    background: none;
+    padding: 0;
+  }
+
+  .toolbar {
+    display: none !important;
+  }
+}

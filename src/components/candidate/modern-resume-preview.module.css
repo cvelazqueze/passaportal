@@ -1,0 +1,127 @@
+.header {
+  background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
+  color: #fff;
+  padding: 0.35in 0.5in 0.3in;
+  margin-bottom: 0.25in;
+}
+
+.headerName {
+  font-size: 22pt;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin: 0;
+  line-height: 1.1;
+}
+
+.headerTitle {
+  font-size: 11pt;
+  font-weight: 500;
+  opacity: 0.92;
+  margin: 0.06in 0 0;
+}
+
+.headerContact {
+  font-size: 9pt;
+  opacity: 0.88;
+  margin: 0.1in 0 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.08in 0.2in;
+}
+
+.content {
+  padding: 0 0.5in 0.5in;
+}
+
+.section {
+  margin-bottom: 0.16in;
+}
+
+.sectionTitle {
+  font-size: 11pt;
+  font-weight: 700;
+  color: #1e3a8a;
+  margin: 0 0 0.08in;
+  padding-left: 0.1in;
+  border-left: 3px solid #2563eb;
+}
+
+.skillsRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.06in;
+  margin-bottom: 0.04in;
+}
+
+.skillPill {
+  font-size: 9pt;
+  padding: 0.03in 0.1in;
+  background: #eff6ff;
+  color: #1e40af;
+  border-radius: 999px;
+}
+
+.experienceBlock {
+  margin-bottom: 0.12in;
+  break-inside: avoid;
+}
+
+.expRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.15in;
+}
+
+.position {
+  font-size: 10.5pt;
+  font-weight: 700;
+  margin: 0;
+  color: #111;
+}
+
+.dates {
+  font-size: 9pt;
+  color: #6b7280;
+  white-space: nowrap;
+}
+
+.company {
+  font-size: 10pt;
+  color: #374151;
+  margin: 0.02in 0 0.05in;
+}
+
+.eduBlock {
+  margin-bottom: 0.08in;
+}
+
+.eduLine {
+  font-size: 10pt;
+  margin: 0;
+}
+
+.eduSub {
+  font-size: 9.5pt;
+  color: #6b7280;
+  margin: 0.02in 0 0;
+}
+
+@media print {
+  .header {
+    margin: 0 0 0.25in;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}
+
+@media (max-width: 900px) {
+  .header {
+    margin: 0 0 1rem;
+    padding: 1.25rem 1rem;
+  }
+
+  .content {
+    padding: 0 1rem 1.5rem;
+  }
+}
