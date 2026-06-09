@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Providers } from "@/components/providers";
 import { getServerLocale } from "@/lib/i18n/server";
@@ -18,6 +18,21 @@ export const metadata: Metadata = {
   title: "PassaPortal - Your Job Passport for Career Management",
   description:
     "Build one modular career profile and generate tailored resume versions, match against job descriptions, and track your professional growth. Not a job board — your single source of truth.",
+  appleWebApp: {
+    capable: true,
+    title: "PassaPortal",
+    statusBarStyle: "default",
+  },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: dark)", color: "#0c1222" },
+  ],
 };
 
 export default async function RootLayout({

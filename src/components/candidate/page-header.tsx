@@ -31,14 +31,14 @@ interface PageHeaderProps {
 
 export function PageHeader({ title, description, action }: PageHeaderProps) {
   return (
-    <div className="flex items-start justify-between gap-4">
-      <div>
-        <h2 className="text-2xl font-bold">{title}</h2>
+    <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+      <div className="min-w-0">
+        <h2 className="text-xl font-bold sm:text-2xl">{title}</h2>
         {description && (
-          <p className="text-muted-foreground">{description}</p>
+          <p className="text-sm text-muted-foreground sm:text-base">{description}</p>
         )}
       </div>
-      {action}
+      {action ? <div className="shrink-0">{action}</div> : null}
     </div>
   );
 }

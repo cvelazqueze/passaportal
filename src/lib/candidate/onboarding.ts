@@ -1,23 +1,10 @@
 import { db } from "@/lib/db";
-import {
-  DEFAULT_PIPELINE_STAGES,
-  DEFAULT_REJECTION_REASONS,
-} from "@/lib/candidate/defaults";
+import { DEFAULT_REJECTION_REASONS } from "@/lib/candidate/defaults";
 
 export async function initializeCandidateWorkspace(
   candidateProfileId: string,
   talentPassportId: string
 ) {
-  await db.candidatePipelineStage.createMany({
-    data: DEFAULT_PIPELINE_STAGES.map((stage) => ({
-      candidateProfileId,
-      name: stage.name,
-      color: stage.color,
-      sortOrder: stage.sortOrder,
-      isSystemDefault: true,
-    })),
-  });
-
   await db.rejectionReason.createMany({
     data: DEFAULT_REJECTION_REASONS.map((label) => ({
       candidateProfileId,

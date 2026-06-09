@@ -58,24 +58,24 @@ export default async function HomePage() {
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b">
-        <div className="container mx-auto flex h-16 items-center justify-between px-4">
+        <div className="container mx-auto flex h-14 min-h-14 items-center justify-between gap-2 px-4 sm:h-16">
           <PublicBrandLink />
-          <nav className="flex items-center gap-2">
+          <nav className="flex shrink-0 items-center gap-1 sm:gap-2">
             <LanguageToggle />
             <ThemeToggle />
             {dashboardPath ? (
-              <Button asChild>
+              <Button asChild size="sm" className="max-w-[10rem] truncate sm:max-w-none sm:px-4">
                 <Link href={dashboardPath}>{t.landing.goToDashboard}</Link>
               </Button>
             ) : (
               <>
                 <Link
                   href="/auth/login"
-                  className="text-sm text-muted-foreground hover:text-foreground"
+                  className="hidden text-sm text-muted-foreground hover:text-foreground sm:inline"
                 >
                   {t.auth.signIn}
                 </Link>
-                <Button asChild>
+                <Button asChild size="sm" className="sm:size-default">
                   <Link href="/auth/register">{t.auth.getStarted}</Link>
                 </Button>
               </>

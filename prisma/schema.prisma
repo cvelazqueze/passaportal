@@ -70,6 +70,12 @@ enum ApplicationStage {
   REJECTED
 }
 
+enum WorkArrangement {
+  REMOTE
+  HYBRID
+  ONSITE
+}
+
 enum DocumentType {
   RESUME
   CERTIFICATION
@@ -763,6 +769,8 @@ model Application {
   contractType       String?
   benefits           String[]         @default([])
   technologies       String[]         @default([])
+  workType           WorkArrangement?
+  duration           String?
   source             String?
   resumeVersionId    String?
   notes              String?          @db.Text

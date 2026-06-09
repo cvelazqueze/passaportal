@@ -2,25 +2,10 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { requireCandidateProfile } from "@/lib/candidate/context";
 import { apiError } from "@/lib/api/error";
-import { z } from "zod";
-
-const createOpportunitySchema = z.object({
-  title: z.string().min(1),
-  company: z.string().min(1),
-  pipelineStageId: z.string().optional(),
-  client: z.string().optional(),
-  recruiterName: z.string().optional(),
-  recruiterContact: z.string().optional(),
-  salaryMin: z.number().optional(),
-  salaryMax: z.number().optional(),
-  salaryCurrency: z.string().default("USD"),
-  contractType: z.string().optional(),
-  benefits: z.array(z.string()).default([]),
-  technologies: z.array(z.string()).default([]),
-  source: z.string().optional(),
-  notes: z.string().optional(),
-  appliedAt: z.string().datetime().optional(),
-});
+import {
+  normalizeOpportunityInput,
+  opportunityBodySchema,
+} from "@/lib/candidate/opportunity-schema";
 
 export async function GET() {
   try {
@@ -53,7 +38,7 @@ export async function POST(request: Request) {
   try {
     const { profile } = await requireCandidateProfile();
     const body = await request.json();
-    const parsed = createOpportunitySchema.safeParse(body);
+    const parsed = opportunityBodySchema.safeParse(body);
 
     if (!parsed.success) {
       return NextResponse.json(
@@ -62,34 +47,22 @@ export async function POST(request: Request) {
       );
     }
 
-    let pipelineStageId = parsed.data.pipelineStageId;
+    const data = normalizeOpportunityInput(parsed.data);
+
+    let pipelineStageId = data.pipelineStageId;
     if (!pipelineStageId) {
-      const defaultStage = await db.candidatePipelineStage.findFirst({
-        where: { candidateProfileId: profile.id, name: "Interested" },
+      const firstStage = await db.candidatePipelineStage.findFirst({
+        where: { candidateProfileId: profile.id, isArchived: false },
+        orderBy: { sortOrder: "asc" },
       });
-      pipelineStageId = defaultStage?.id;
+      pipelineStageId = firstStage?.id ?? null;
     }
 
     const opportunity = await db.application.create({
       data: {
         candidateProfileId: profile.id,
-        title: parsed.data.title,
-        company: parsed.data.company,
+        ...data,
         pipelineStageId,
-        client: parsed.data.client,
-        recruiterName: parsed.data.recruiterName,
-        recruiterContact: parsed.data.recruiterContact,
-        salaryMin: parsed.data.salaryMin,
-        salaryMax: parsed.data.salaryMax,
-        salaryCurrency: parsed.data.salaryCurrency,
-        contractType: parsed.data.contractType,
-        benefits: parsed.data.benefits,
-        technologies: parsed.data.technologies,
-        source: parsed.data.source,
-        notes: parsed.data.notes,
-        appliedAt: parsed.data.appliedAt
-          ? new Date(parsed.data.appliedAt)
-          : undefined,
       },
       include: { pipelineStage: true },
     });
