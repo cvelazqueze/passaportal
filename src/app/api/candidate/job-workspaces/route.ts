@@ -20,7 +20,6 @@ export async function GET() {
     const { profile } = await requireCandidateProfile();
     const workspaces = await db.jobDescriptionWorkspace.findMany({
       where: { candidateProfileId: profile.id },
-      include: { resumeVersion: { select: { id: true, name: true } } },
       orderBy: { updatedAt: "desc" },
     });
     return NextResponse.json({ workspaces });

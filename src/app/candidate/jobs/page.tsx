@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { DashboardLayout } from "@/components/layouts/dashboard-layout";
 import { PageHeader } from "@/components/candidate/page-header";
 import {
@@ -15,24 +15,35 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Target, FileText } from "lucide-react";
+import { Target } from "lucide-react";
 import { useT } from "@/components/locale-provider";
 import { interpolate } from "@/lib/i18n";
+import type { JobAnalysisResult, MatchAnalysisResult } from "@/lib/candidate/job-analysis";
 
 interface WorkspaceResult {
   workspace: { id: string; jobTitle: string; company: string };
-  analysis: {
-    requiredSkills: string[];
-    preferredSkills: string[];
-    technologies: string[];
-    certifications: string[];
-    experienceYears: number | null;
-  };
-  matchAnalysis: {
-    matchingSkills: string[];
-    missingSkills: string[];
-    suggestions: string[];
-    matchPercentage: number;
+  analysis: JobAnalysisResult;
+  matchAnalysis: MatchAnalysisResult;
+}
+
+interface SavedWorkspace {
+  id: string;
+  jobTitle: string;
+  company: string;
+  analysis: JobAnalysisResult;
+  matchAnalysis: MatchAnalysisResult;
+  updatedAt: string;
+}
+
+function toWorkspaceResult(saved: SavedWorkspace): WorkspaceResult {
+  return {
+    workspace: {
+      id: saved.id,
+      jobTitle: saved.jobTitle,
+      company: saved.company,
+    },
+    analysis: saved.analysis,
+    matchAnalysis: saved.matchAnalysis,
   };
 }
 
@@ -40,8 +51,26 @@ export default function JobWorkspacePage() {
   const t = useT();
   const j = t.jobs;
   const [loading, setLoading] = useState(false);
+  const [savedLoading, setSavedLoading] = useState(true);
+  const [saved, setSaved] = useState<SavedWorkspace[]>([]);
   const [result, setResult] = useState<WorkspaceResult | null>(null);
   const [error, setError] = useState("");
+
+  const loadSaved = useCallback(async () => {
+    try {
+      const res = await fetch("/api/candidate/job-workspaces");
+      const json = await res.json();
+      if (res.ok) {
+        setSaved(json.workspaces ?? []);
+      }
+    } finally {
+      setSavedLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadSaved();
+  }, [loadSaved]);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -67,11 +96,17 @@ export default function JobWorkspacePage() {
         return;
       }
       setResult(json);
+      await loadSaved();
     } catch {
       setError(j.somethingWrong);
     } finally {
       setLoading(false);
     }
+  }
+
+  function openSavedAnalysis(item: SavedWorkspace) {
+    setResult(toWorkspaceResult(item));
+    setError("");
   }
 
   return (
@@ -208,10 +243,6 @@ export default function JobWorkspacePage() {
                     </ul>
                   </div>
                 )}
-                <Button className="w-full">
-                  <FileText className="mr-2 h-4 w-4" />
-                  {j.generateResume}
-                </Button>
               </CardContent>
             </Card>
           </div>
@@ -223,7 +254,43 @@ export default function JobWorkspacePage() {
             <CardDescription>{j.savedAnalysesDesc}</CardDescription>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-muted-foreground">{j.noSavedAnalyses}</p>
+            {savedLoading ? (
+              <p className="text-sm text-muted-foreground">{j.loadingSaved}</p>
+            ) : saved.length === 0 ? (
+              <p className="text-sm text-muted-foreground">{j.noSavedAnalyses}</p>
+            ) : (
+              <ul className="space-y-2">
+                {saved.map((item) => {
+                  const matchPct = item.matchAnalysis?.matchPercentage ?? 0;
+                  const isActive = result?.workspace.id === item.id;
+                  return (
+                    <li key={item.id}>
+                      <button
+                        type="button"
+                        onClick={() => openSavedAnalysis(item)}
+                        className={`flex w-full items-center justify-between gap-3 rounded-lg border p-3 text-left transition-colors hover:bg-muted/50 ${
+                          isActive ? "border-primary bg-primary/5" : ""
+                        }`}
+                      >
+                        <div className="min-w-0">
+                          <p className="font-medium truncate">
+                            {item.jobTitle} {t.common.at} {item.company}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {interpolate(j.analyzedOn, {
+                              date: new Date(item.updatedAt).toLocaleDateString(),
+                            })}
+                          </p>
+                        </div>
+                        <Badge variant={matchPct >= 70 ? "default" : "secondary"}>
+                          {matchPct}%
+                        </Badge>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
           </CardContent>
         </Card>
       </div>

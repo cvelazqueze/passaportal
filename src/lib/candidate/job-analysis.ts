@@ -130,7 +130,7 @@ export function matchProfileToJob(
     suggestions.push(`Consider certifications: ${analysis.certifications.join(", ")}`);
   }
   if (missingSkills.length > 3) {
-    suggestions.push("Create a tailored resume version emphasizing matching skills first");
+    suggestions.push("Emphasize matching skills first when tailoring your resume in Resume Hub");
   }
 
   const totalItems = allRequired.length || 1;

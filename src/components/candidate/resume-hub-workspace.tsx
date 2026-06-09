@@ -41,15 +41,21 @@ interface ResumeHubWorkspaceProps {
   user: { firstName: string; lastName: string; email: string };
   passport: SerializedPassport;
   resumes: ResumeRow[];
+  initialResumeId?: string;
 }
 
 export function ResumeHubWorkspace({
   user,
   passport,
   resumes,
+  initialResumeId,
 }: ResumeHubWorkspaceProps) {
   const { t } = useLocale();
   const master = resumes.find((r) => r.isMaster) ?? resumes[0];
+  const defaultActiveId =
+    initialResumeId && resumes.some((r) => r.id === initialResumeId)
+      ? initialResumeId
+      : (master?.id ?? "");
 
   const initialSelections = useMemo(() => {
     const map: Record<string, ResumeSelection> = {};
@@ -67,7 +73,7 @@ export function ResumeHubWorkspace({
     return map;
   }, [resumes]);
 
-  const [activeId, setActiveId] = useState(master?.id ?? "");
+  const [activeId, setActiveId] = useState(defaultActiveId);
   const [selections, setSelections] =
     useState<Record<string, ResumeSelection>>(initialSelections);
   const [displayNames, setDisplayNames] =

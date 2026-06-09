@@ -19,7 +19,12 @@ import { serializePassport } from "@/lib/resume/serialize-passport";
 import { getServerDictionary } from "@/lib/i18n/server";
 import { ResumeTemplate } from "@prisma/client";
 
-export default async function ResumeHubPage() {
+interface ResumeHubPageProps {
+  searchParams: Promise<{ resumeId?: string }>;
+}
+
+export default async function ResumeHubPage({ searchParams }: ResumeHubPageProps) {
+  const { resumeId } = await searchParams;
   const session = await auth();
   if (!session?.user) redirect("/auth/login");
 
@@ -85,6 +90,7 @@ export default async function ResumeHubPage() {
         <ResumeHubWorkspace
           user={user}
           passport={serializePassport(passport)}
+          initialResumeId={resumeId}
           resumes={activeResumes.map((r) => ({
             id: r.id,
             name: r.name,

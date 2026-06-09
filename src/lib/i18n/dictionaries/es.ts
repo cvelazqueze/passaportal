@@ -277,9 +277,10 @@ export const esDict: Dictionary = {
     missingSkills: "Habilidades faltantes",
     allSkillsMatch: "¡Coincides con todas las habilidades requeridas!",
     suggestions: "Sugerencias",
-    generateResume: "Generar currículum adaptado",
+    loadingSaved: "Cargando análisis guardados...",
+    analyzedOn: "Analizado el {date}",
     savedAnalyses: "Análisis guardados",
-    savedAnalysesDesc: "Descripciones de empleo analizadas previamente",
+    savedAnalysesDesc: "Descripciones analizadas — haz clic para ver",
     noSavedAnalyses:
       "Tus análisis guardados aparecerán aquí después de analizar descripciones.",
     analysisFailed: "Error en el análisis",
