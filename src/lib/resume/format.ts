@@ -15,10 +15,14 @@ export function formatResumeDate(
 }
 
 export function formatContactLine(
-  data: Pick<ResumeData, "email" | "phone" | "linkedIn" | "github">,
+  data: Pick<
+    ResumeData,
+    "email" | "phone" | "linkedIn" | "github" | "portfolio" | "city" | "country"
+  >,
   separator = " • "
 ): string {
-  const parts: string[] = [data.email];
+  const parts: string[] = [];
+  if (data.email) parts.push(data.email);
   if (data.phone) parts.push(data.phone);
   if (data.linkedIn) {
     parts.push(data.linkedIn.replace(/^https?:\/\//, ""));
@@ -26,6 +30,11 @@ export function formatContactLine(
   if (data.github) {
     parts.push(data.github.replace(/^https?:\/\//, ""));
   }
+  if (data.portfolio) {
+    parts.push(data.portfolio.replace(/^https?:\/\//, ""));
+  }
+  const location = [data.city, data.country].filter(Boolean).join(", ");
+  if (location) parts.push(location);
   return parts.join(separator);
 }
 
@@ -41,7 +50,14 @@ export function buildAdditionalInfo(
   ].filter((v, i, arr) => arr.indexOf(v) === i);
 
   if (techList.length > 0 && data.experiences.length > 0) {
-    additional.push(`${labels.technicalSkills}: ${techList.join(", ")}`);
+    additional.push(`${labels.skills}: ${techList.join(", ")}`);
+  }
+
+  if (data.languages.length > 0) {
+    const langs = data.languages
+      .map((l) => `${l.name} (${l.proficiency.toLowerCase()})`)
+      .join(", ");
+    additional.push(`${labels.languages}: ${langs}`);
   }
 
   if (data.certifications.length > 0) {

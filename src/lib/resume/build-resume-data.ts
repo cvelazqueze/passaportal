@@ -1,11 +1,13 @@
 import type { ResumeData } from "./types";
 import {
   applyResumeSelection,
+  applyEmailVisibility,
   type ResumeSelection,
 } from "./resume-selection";
 
 type PassportInput = {
   professionalTitle: string | null;
+  professionalSummary: string | null;
   phone: string | null;
   linkedIn: string | null;
   portfolio: string | null;
@@ -26,6 +28,7 @@ type PassportInput = {
     technologies: string[];
   }[];
   skills: { id: string; name: string; proficiency: string }[];
+  languages: { id: string; name: string; proficiency: string }[];
   education: {
     id: string;
     institution: string;
@@ -53,19 +56,25 @@ export function buildResumeData(
   passport: PassportInput,
   selection?: ResumeSelection | null
 ): ResumeData {
-  const filtered = applyResumeSelection(passport, selection);
+  const normalized = {
+    ...passport,
+    languages: passport.languages ?? [],
+    projects: passport.projects ?? [],
+  };
+  const filtered = applyResumeSelection(normalized, selection);
 
   return {
     firstName: user.firstName,
     lastName: user.lastName,
-    email: user.email,
-    phone: passport.phone,
-    linkedIn: passport.linkedIn,
-    portfolio: passport.portfolio,
-    github: passport.github,
-    city: passport.city,
-    country: passport.country,
-    professionalTitle: passport.professionalTitle,
+    email: applyEmailVisibility(user.email, selection),
+    phone: filtered.phone,
+    linkedIn: filtered.linkedIn,
+    portfolio: filtered.portfolio,
+    github: filtered.github,
+    city: filtered.city,
+    country: filtered.country,
+    professionalTitle: filtered.professionalTitle,
+    professionalSummary: filtered.professionalSummary,
     technologies: passport.technologies,
     experiences: filtered.experiences.map((exp) => ({
       company: exp.company,
@@ -81,6 +90,10 @@ export function buildResumeData(
     skills: filtered.skills.map((s) => ({
       name: s.name,
       proficiency: s.proficiency,
+    })),
+    languages: filtered.languages.map((l) => ({
+      name: l.name,
+      proficiency: l.proficiency,
     })),
     education: filtered.education.map((edu) => ({
       institution: edu.institution,

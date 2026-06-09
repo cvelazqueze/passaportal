@@ -1,1 +1,1 @@
-export const LOCALE_COOKIE = "talentos-locale";
+export const LOCALE_COOKIE = "passaportal-locale";

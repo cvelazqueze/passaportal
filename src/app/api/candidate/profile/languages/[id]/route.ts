@@ -1,0 +1,52 @@
+import { NextResponse } from "next/server";
+import { db } from "@/lib/db";
+import { apiError } from "@/lib/api/error";
+import { getPassportId, afterProfileMutation } from "@/lib/candidate/profile-mutations";
+import { ProficiencyLevel } from "@prisma/client";
+import { z } from "zod";
+
+const schema = z.object({
+  name: z.string().min(1).optional(),
+  proficiency: z.nativeEnum(ProficiencyLevel).optional(),
+});
+
+export async function PATCH(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const talentPassportId = await getPassportId();
+    const { id } = await params;
+    const parsed = schema.safeParse(await request.json());
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error.errors[0]?.message }, { status: 400 });
+    }
+
+    const existing = await db.language.findFirst({ where: { id, talentPassportId } });
+    if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+    const language = await db.language.update({ where: { id }, data: parsed.data });
+    await afterProfileMutation(talentPassportId);
+    return NextResponse.json({ language });
+  } catch (error) {
+    return apiError(error);
+  }
+}
+
+export async function DELETE(
+  _request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const talentPassportId = await getPassportId();
+    const { id } = await params;
+    const existing = await db.language.findFirst({ where: { id, talentPassportId } });
+    if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+    await db.language.delete({ where: { id } });
+    await afterProfileMutation(talentPassportId);
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    return apiError(error);
+  }
+}

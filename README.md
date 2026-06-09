@@ -8,7 +8,7 @@ Privacy-first Talent Relationship Management (TRM) platform built with Next.js 1
 # 1. Clone and configure
 cp .env.example .env
 
-# 2. Start PostgreSQL and Redis
+# 2. Start PostgreSQL and Redis (creates DB `passaportal`)
 docker compose up postgres redis -d
 
 # 3. Install dependencies
@@ -31,18 +31,22 @@ Or run everything in Docker:
 docker compose --profile dev up app-dev postgres redis
 ```
 
-## Demo Accounts
+> **Upgrading from `talentos` DB naming?** Stop containers, remove the old volume (`docker compose down -v`), update `.env` to match `.env.example`, then run `db:push` and `db:seed` again.
 
-All accounts use password: `Password123!`
+## Demo Accounts (local development only)
+
+After seeding, demo users share the password you set as `SEED_DEMO_PASSWORD` in `.env` (never commit that file).
 
 | Role | Email |
 |------|-------|
-| Platform Admin | admin@talentos.app |
+| Platform Admin | admin@passaportal.app |
 | Agency Admin | admin@acme.com |
 | Recruiter | recruiter@acme.com |
 | Hiring Manager | hm@acme.com |
 | Candidate | alex@example.com |
 | Candidate | jordan@example.com |
+
+> **Production:** leave `ALLOW_DEMO_SEED=false` and do not run `npm run db:seed` unless you are intentionally provisioning a staging environment.
 
 ## Candidate Portal — Career Copilot
 
@@ -152,13 +156,49 @@ npm run test:e2e
 
 ### Vercel (Recommended)
 
-1. Push to GitHub
-2. Import in Vercel
-3. Set environment variables from `.env.example`
-4. Connect PostgreSQL (Neon, Supabase, or Railway)
-5. Deploy
+`localhost:5432` only works on your machine. Production **must** use a hosted Postgres URL.
+
+1. Create a database on [Neon](https://neon.tech), Supabase, or Railway.
+2. Import the repo in Vercel.
+3. Link **Neon** in Vercel (or paste Neon’s generated variables). Map like this:
+
+| PassaPortal / Prisma | Neon variable |
+|----------------------|---------------|
+| `DATABASE_URL` | Neon **pooled** URL (`*-pooler` host) |
+| `DATABASE_URL_UNPOOLED` | Neon **unpooled** URL (`DATABASE_URL_UNPOOLED`) |
+
+Also set: `AUTH_SECRET`, `AUTH_URL` (your Vercel URL), `ENCRYPTION_KEY`, `NODE_ENV=production`.
+
+If Vercel injects `POSTGRES_PRISMA_URL` / `POSTGRES_URL_NON_POOLING` only, duplicate them:
+
+- `DATABASE_URL` = `POSTGRES_PRISMA_URL`
+- `DATABASE_URL_UNPOOLED` = `POSTGRES_URL_NON_POOLING`
+
+4. Apply the schema to the **production** database (from your laptop, one time):
+
+```bash
+export DATABASE_URL="your-neon-pooled-url"
+export DATABASE_URL_UNPOOLED="your-neon-unpooled-url"
+npx prisma db push
+```
+
+5. Redeploy on Vercel (Deployments → … → Redeploy) so the new env vars are picked up.
+
+**Common mistake:** leaving `DATABASE_URL` as `localhost:5432` — Vercel cannot reach your local Docker Postgres.
 
 ### Docker Production
+
+1. On the server, copy `.env.example` to `.env` and set **strong, unique** values for every `CHANGE_ME` entry.
+2. Set `AUTH_URL` to your public URL (e.g. `https://app.passaportal.com`).
+3. Set `NODE_ENV=production` and `ALLOW_DEMO_SEED=false`.
+4. Generate fresh secrets (do not reuse development values):
+
+```bash
+openssl rand -base64 32   # AUTH_SECRET
+openssl rand -hex 32      # ENCRYPTION_KEY (64 hex chars)
+```
+
+5. Deploy:
 
 ```bash
 docker compose build app
@@ -167,15 +207,21 @@ docker compose up app postgres redis -d
 
 ### Environment Variables
 
-See `.env.example` for all required variables. Generate secrets:
+All credentials and secrets live in `.env` only. The repository ships `.env.example` as a template with no real secrets.
 
-```bash
-# AUTH_SECRET
-openssl rand -base64 32
+| Variable | Required | Notes |
+|----------|----------|-------|
+| `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB` | Yes | Defaults in `.env.example`: `passaportal` / `passaportal` |
+| `DATABASE_URL` | Yes | Local: `localhost`. Production: Neon **pooled** URL (never `localhost`) |
+| `DATABASE_URL_UNPOOLED` | Yes | Same as `DATABASE_URL` locally; Neon **unpooled** URL in production |
+| `AUTH_SECRET` | Yes | Auth.js session signing |
+| `AUTH_URL` | Yes | Public app URL |
+| `ENCRYPTION_KEY` | Yes | 64-char hex AES-256 key |
+| `REDIS_URL` | Yes | Rate limiting / caching |
+| `SEED_DEMO_PASSWORD` | Seed only | Demo user password; never set in production |
+| `ALLOW_DEMO_SEED` | Seed only | Must be `false` in production |
 
-# ENCRYPTION_KEY (64 hex chars)
-openssl rand -hex 32
-```
+Optional integrations: `UPLOADTHING_*`, `RESEND_*`, `STRIPE_*` — see `.env.example`.
 
 ## License
 

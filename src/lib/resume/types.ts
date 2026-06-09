@@ -9,6 +9,7 @@ export interface ResumeData {
   city?: string | null;
   country?: string | null;
   professionalTitle?: string | null;
+  professionalSummary?: string | null;
   technologies?: string[];
   experiences: {
     company: string;
@@ -22,6 +23,7 @@ export interface ResumeData {
     technologies: string[];
   }[];
   skills: { name: string; proficiency: string }[];
+  languages: { name: string; proficiency: string }[];
   education: {
     institution: string;
     degree: string;

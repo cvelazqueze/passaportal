@@ -1,89 +1,86 @@
+import { getToken } from "next-auth/jwt";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { auth } from "@/lib/auth";
-import { UserRole } from "@prisma/client";
-import { getRoleDashboardPath } from "@/lib/rbac/permissions";
-import {
-  checkRateLimit,
-  getRateLimitKey,
-} from "@/lib/security/rate-limit";
 
-const publicPaths = ["/", "/auth/login", "/auth/register", "/auth/error"];
+const publicPaths = new Set([
+  "/",
+  "/auth/login",
+  "/auth/register",
+  "/auth/error",
+]);
+
 const apiPublicPaths = ["/api/auth"];
 
-const rolePathMap: Record<string, UserRole[]> = {
-  "/candidate": [UserRole.CANDIDATE],
-  "/recruiter": [UserRole.RECRUITER, UserRole.AGENCY_ADMIN],
-  "/hiring-manager": [UserRole.HIRING_MANAGER, UserRole.AGENCY_ADMIN],
-  "/admin": [UserRole.AGENCY_ADMIN],
-  "/platform": [UserRole.PLATFORM_ADMIN],
+const rolePathMap: Record<string, readonly string[]> = {
+  "/candidate": ["CANDIDATE"],
+  "/recruiter": ["RECRUITER", "AGENCY_ADMIN"],
+  "/hiring-manager": ["HIRING_MANAGER", "AGENCY_ADMIN"],
+  "/admin": ["AGENCY_ADMIN"],
+  "/platform": ["PLATFORM_ADMIN"],
 };
+
+function getRoleDashboardPath(role: string): string {
+  switch (role) {
+    case "CANDIDATE":
+      return "/candidate/dashboard";
+    case "RECRUITER":
+      return "/recruiter/dashboard";
+    case "HIRING_MANAGER":
+      return "/hiring-manager/dashboard";
+    case "AGENCY_ADMIN":
+      return "/admin/dashboard";
+    case "PLATFORM_ADMIN":
+      return "/platform/dashboard";
+    default:
+      return "/";
+  }
+}
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Rate limiting for API routes
-  if (pathname.startsWith("/api/") && !apiPublicPaths.some((p) => pathname.startsWith(p))) {
-    const ip = request.headers.get("x-forwarded-for") ?? "unknown";
-    const key = getRateLimitKey(ip, pathname);
-    const { allowed, remaining, resetAt } = checkRateLimit(key);
-
-    if (!allowed) {
-      return NextResponse.json(
-        { error: "Too many requests" },
-        {
-          status: 429,
-          headers: {
-            "X-RateLimit-Remaining": "0",
-            "X-RateLimit-Reset": resetAt.toString(),
-          },
-        }
-      );
-    }
-
-    const response = NextResponse.next();
-    response.headers.set("X-RateLimit-Remaining", remaining.toString());
-    response.headers.set("X-RateLimit-Reset", resetAt.toString());
-  }
-
-  // Allow public paths
-  if (publicPaths.includes(pathname)) {
+  if (publicPaths.has(pathname)) {
     return NextResponse.next();
   }
 
-  // Allow auth API
   if (apiPublicPaths.some((p) => pathname.startsWith(p))) {
     return NextResponse.next();
   }
 
-  const session = await auth();
+  const token = await getToken({
+    req: request,
+    secret: process.env.AUTH_SECRET,
+  });
 
-  // Redirect unauthenticated users
-  if (!session?.user) {
+  if (!token) {
     const loginUrl = new URL("/auth/login", request.url);
     loginUrl.searchParams.set("callbackUrl", pathname);
     return NextResponse.redirect(loginUrl);
   }
 
-  const userRole = session.user.role;
+  const userRole = typeof token.role === "string" ? token.role : undefined;
 
-  // Check role-based access
-  for (const [pathPrefix, allowedRoles] of Object.entries(rolePathMap)) {
-    if (pathname.startsWith(pathPrefix)) {
-      if (!allowedRoles.includes(userRole)) {
-        const dashboard = getRoleDashboardPath(userRole);
-        return NextResponse.redirect(new URL(dashboard, request.url));
+  if (userRole) {
+    for (const [pathPrefix, allowedRoles] of Object.entries(rolePathMap)) {
+      if (pathname.startsWith(pathPrefix)) {
+        if (!allowedRoles.includes(userRole)) {
+          return NextResponse.redirect(
+            new URL(getRoleDashboardPath(userRole), request.url)
+          );
+        }
+        break;
       }
-      break;
     }
   }
 
-  // CSRF protection for mutations
   if (["POST", "PUT", "PATCH", "DELETE"].includes(request.method)) {
     const origin = request.headers.get("origin");
     const host = request.headers.get("host");
     if (origin && host && !origin.includes(host)) {
-      return NextResponse.json({ error: "CSRF validation failed" }, { status: 403 });
+      return NextResponse.json(
+        { error: "CSRF validation failed" },
+        { status: 403 }
+      );
     }
   }
 
@@ -92,6 +89,9 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|public).*)",
+    /*
+     * Skip Next internals and static files from /public (served at root, e.g. /brand/...).
+     */
+    "/((?!_next/static|_next/image|favicon.ico|brand/|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
   ],
 };

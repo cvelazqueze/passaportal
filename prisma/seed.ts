@@ -10,6 +10,24 @@ function hashPassword(password: string): string {
 const prisma = new PrismaClient();
 
 async function main() {
+  if (
+    process.env.NODE_ENV === "production" &&
+    process.env.ALLOW_DEMO_SEED !== "true"
+  ) {
+    console.error(
+      "Refusing to seed demo data in production. Set ALLOW_DEMO_SEED=true only for intentional staging seeds."
+    );
+    process.exit(1);
+  }
+
+  const demoPassword = process.env.SEED_DEMO_PASSWORD;
+  if (!demoPassword) {
+    console.error(
+      "SEED_DEMO_PASSWORD is not set. Add it to your .env file before running db:seed."
+    );
+    process.exit(1);
+  }
+
   console.log("Seeding PassaPortal database...");
 
   // Create permissions
@@ -36,14 +54,14 @@ async function main() {
     });
   }
 
-  const passwordHash = hashPassword("Password123!");
+  const passwordHash = hashPassword(demoPassword);
 
   // Platform Admin
   const platformAdmin = await prisma.user.upsert({
-    where: { email: "admin@talentos.app" },
+    where: { email: "admin@passaportal.app" },
     update: {},
     create: {
-      email: "admin@talentos.app",
+      email: "admin@passaportal.app",
       firstName: "Platform",
       lastName: "Admin",
       passwordHash,
@@ -438,8 +456,8 @@ async function main() {
   }
 
   console.log("Seed completed successfully!");
-  console.log("\nDemo accounts (password: Password123!):");
-  console.log("  Platform Admin: admin@talentos.app");
+  console.log("\nDemo accounts (password from SEED_DEMO_PASSWORD in .env):");
+  console.log("  Platform Admin: admin@passaportal.app");
   console.log("  Agency Admin:   admin@acme.com");
   console.log("  Recruiter:      recruiter@acme.com");
   console.log("  Hiring Manager: hm@acme.com");

@@ -38,6 +38,7 @@ export default async function ResumePrintPage({ searchParams }: PrintPageProps) 
           education: { orderBy: { sortOrder: "asc" } },
           certifications: { orderBy: { sortOrder: "asc" } },
           projects: { orderBy: { sortOrder: "asc" } },
+          languages: { orderBy: { sortOrder: "asc" } },
           resumeVersions: true,
         },
       },

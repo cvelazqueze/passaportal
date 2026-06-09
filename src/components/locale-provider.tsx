@@ -1,6 +1,14 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  useCallback,
+  startTransition,
+} from "react";
+import { useRouter } from "next/navigation";
 import { getDictionary, type Dictionary, type Locale } from "@/lib/i18n";
 import { LOCALE_COOKIE } from "@/lib/i18n/constants";
 
@@ -25,16 +33,31 @@ export function LocaleProvider({
   initialLocale: Locale;
   children: React.ReactNode;
 }) {
+  const router = useRouter();
   const [locale, setLocaleState] = useState<Locale>(initialLocale);
 
   useEffect(() => {
-    setLocaleState(readCookieLocale());
-  }, []);
+    const cookieLocale = readCookieLocale();
+    if (cookieLocale !== initialLocale) {
+      setLocaleState(cookieLocale);
+    }
+    document.documentElement.lang = cookieLocale;
+  }, [initialLocale]);
 
-  function setLocale(next: Locale) {
-    document.cookie = `${LOCALE_COOKIE}=${next};path=/;max-age=31536000;SameSite=Lax`;
-    setLocaleState(next);
-  }
+  const setLocale = useCallback(
+    (next: Locale) => {
+      if (next === locale) return;
+
+      document.cookie = `${LOCALE_COOKIE}=${next};path=/;max-age=31536000;SameSite=Lax`;
+      document.documentElement.lang = next;
+      setLocaleState(next);
+
+      startTransition(() => {
+        router.refresh();
+      });
+    },
+    [locale, router]
+  );
 
   const t = getDictionary(locale);
 

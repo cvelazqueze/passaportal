@@ -43,8 +43,10 @@ export function AtsResumePreview({
   const isPrint = variant === "print";
   const pageCount = estimatePageCount(data);
   const hasContent =
+    !!data.professionalSummary ||
     data.experiences.length > 0 ||
     data.education.length > 0 ||
+    data.projects.length > 0 ||
     additional.length > 0;
 
   if (!hasContent) {
@@ -96,8 +98,20 @@ export function AtsResumePreview({
               {data.professionalTitle && (
                 <p className={styles.title}>{data.professionalTitle}</p>
               )}
-              <p className={styles.contact}>{formatContactLine(data, " • ")}</p>
+              {(() => {
+                const contact = formatContactLine(data, " • ");
+                return contact ? (
+                  <p className={styles.contact}>{contact}</p>
+                ) : null;
+              })()}
             </header>
+
+            {data.professionalSummary && (
+              <section>
+                <h2 className={styles.sectionTitle}>{labels.summary.toUpperCase()}</h2>
+                <p className={styles.summaryText}>{data.professionalSummary}</p>
+              </section>
+            )}
 
             {data.experiences.length > 0 && (
               <section>
@@ -157,6 +171,25 @@ export function AtsResumePreview({
                     </div>
                   );
                 })}
+              </section>
+            )}
+
+            {data.projects.length > 0 && (
+              <section>
+                <h2 className={styles.sectionTitle}>{labels.projects.toUpperCase()}</h2>
+                {data.projects.map((project, idx) => (
+                  <div key={idx} className={styles.experienceBlock}>
+                    <p className={styles.position}>{project.title}</p>
+                    {project.description && (
+                      <p className={styles.summaryText}>{project.description}</p>
+                    )}
+                    {project.technologies.length > 0 && (
+                      <p className={styles.summaryText}>
+                        {labels.technologies}: {project.technologies.join(", ")}
+                      </p>
+                    )}
+                  </div>
+                ))}
               </section>
             )}
 

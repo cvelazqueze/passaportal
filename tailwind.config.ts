@@ -51,6 +51,14 @@ const config: Config = {
           DEFAULT: "hsl(var(--warning))",
           foreground: "hsl(var(--warning-foreground))",
         },
+        brand: {
+          purple: "hsl(var(--brand-purple))",
+          blue: "hsl(var(--brand-blue))",
+        },
+      },
+      backgroundImage: {
+        "brand-gradient":
+          "linear-gradient(135deg, hsl(var(--brand-purple)) 0%, hsl(var(--brand-blue)) 100%)",
       },
       borderRadius: {
         lg: "var(--radius)",

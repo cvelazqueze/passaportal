@@ -125,6 +125,12 @@
   margin: 0 0 0.05in;
 }
 
+.summaryText {
+  font-size: 10pt;
+  margin: 0 0 0.08in;
+  text-align: justify;
+}
+
 .bulletList {
   margin: 0;
   padding: 0 0 0 0.14in;

@@ -62,6 +62,13 @@ interface PassportData {
     endDate: string | Date | null;
   }[];
   certifications: { id: string; name: string; issuer: string }[];
+  projects: {
+    id: string;
+    title: string;
+    description: string | null;
+    technologies: string[];
+  }[];
+  languages: { id: string; name: string; proficiency: string }[];
 }
 
 interface ProfileEditorProps {
@@ -106,6 +113,9 @@ export function ProfileEditor({ email, passport, autoSummary }: ProfileEditorPro
   const [addingEdu, setAddingEdu] = useState(false);
   const [addingSkill, setAddingSkill] = useState(false);
   const [addingCert, setAddingCert] = useState(false);
+  const [addingProject, setAddingProject] = useState(false);
+  const [addingLanguage, setAddingLanguage] = useState(false);
+  const [editingSummary, setEditingSummary] = useState(false);
 
   const [contactForm, setContactForm] = useState({
     professionalTitle: passport.professionalTitle ?? "",
@@ -115,9 +125,11 @@ export function ProfileEditor({ email, passport, autoSummary }: ProfileEditorPro
     portfolio: passport.portfolio ?? "",
     city: passport.city ?? "",
     country: passport.country ?? "",
-    professionalSummary: passport.professionalSummary ?? "",
+    careerGoals: passport.careerGoals ?? "",
     technologies: passport.technologies.join(", "),
   });
+
+  const [summaryText, setSummaryText] = useState(passport.professionalSummary ?? "");
 
   const emptyExp = {
     company: "",
@@ -139,6 +151,16 @@ export function ProfileEditor({ email, passport, autoSummary }: ProfileEditorPro
   const [newSkill, setNewSkill] = useState("");
   const [newCert, setNewCert] = useState({ name: "", issuer: "" });
   const [editCert, setEditCert] = useState<Record<string, { name: string; issuer: string }>>({});
+
+  const emptyProject = { title: "", description: "", technologies: "" };
+  const [newProject, setNewProject] = useState(emptyProject);
+  const [editProject, setEditProject] = useState<Record<string, typeof emptyProject>>({});
+
+  const proficiencyOptions = ["BEGINNER", "INTERMEDIATE", "ADVANCED", "EXPERT"] as const;
+  const [newLanguage, setNewLanguage] = useState({ name: "", proficiency: "INTERMEDIATE" as const });
+  const [editLanguage, setEditLanguage] = useState<
+    Record<string, { name: string; proficiency: (typeof proficiencyOptions)[number] }>
+  >({});
 
   function flash(msg: string, isError = false) {
     if (isError) setError(msg);
@@ -170,11 +192,26 @@ export function ProfileEditor({ email, passport, autoSummary }: ProfileEditorPro
         portfolio: contactForm.portfolio,
         city: contactForm.city || undefined,
         country: contactForm.country || undefined,
-        professionalSummary: contactForm.professionalSummary || undefined,
+        careerGoals: contactForm.careerGoals || undefined,
         technologies: splitComma(contactForm.technologies),
       });
       flash(m.contactSaved);
       setEditingContact(false);
+    } catch (e) {
+      flash(e instanceof Error ? e.message : m.saveFailed, true);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleSaveSummary() {
+    setSaving(true);
+    try {
+      await apiCall("/api/candidate/profile", "PATCH", {
+        professionalSummary: summaryText || undefined,
+      });
+      flash(m.summarySaved);
+      setEditingSummary(false);
     } catch (e) {
       flash(e instanceof Error ? e.message : m.saveFailed, true);
     } finally {
@@ -395,6 +432,101 @@ export function ProfileEditor({ email, passport, autoSummary }: ProfileEditorPro
     }
   }
 
+  async function addProject() {
+    setSaving(true);
+    try {
+      await apiCall("/api/candidate/profile/projects", "POST", {
+        title: newProject.title,
+        description: newProject.description || undefined,
+        technologies: splitComma(newProject.technologies),
+      });
+      flash(m.projectAdded);
+      setNewProject(emptyProject);
+      setAddingProject(false);
+    } catch (e) {
+      flash(e instanceof Error ? e.message : m.addFailed, true);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function saveProject(id: string) {
+    const f = editProject[id];
+    if (!f) return;
+    setSaving(true);
+    try {
+      await apiCall(`/api/candidate/profile/projects/${id}`, "PATCH", {
+        title: f.title,
+        description: f.description || null,
+        technologies: splitComma(f.technologies),
+      });
+      flash(m.projectUpdated);
+      const next = { ...editProject };
+      delete next[id];
+      setEditProject(next);
+    } catch (e) {
+      flash(e instanceof Error ? e.message : m.updateFailed, true);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function deleteProject(id: string) {
+    if (!confirm(m.confirmDeleteProject)) return;
+    try {
+      await apiCall(`/api/candidate/profile/projects/${id}`, "DELETE");
+      flash(m.projectDeleted);
+    } catch (e) {
+      flash(e instanceof Error ? e.message : m.deleteFailed, true);
+    }
+  }
+
+  async function addLanguage() {
+    setSaving(true);
+    try {
+      await apiCall("/api/candidate/profile/languages", "POST", newLanguage);
+      flash(m.languageAdded);
+      setNewLanguage({ name: "", proficiency: "INTERMEDIATE" });
+      setAddingLanguage(false);
+    } catch (e) {
+      flash(e instanceof Error ? e.message : m.addFailed, true);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function saveLanguage(id: string) {
+    const f = editLanguage[id];
+    if (!f) return;
+    setSaving(true);
+    try {
+      await apiCall(`/api/candidate/profile/languages/${id}`, "PATCH", f);
+      flash(m.languageUpdated);
+      const next = { ...editLanguage };
+      delete next[id];
+      setEditLanguage(next);
+    } catch (e) {
+      flash(e instanceof Error ? e.message : m.updateFailed, true);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function deleteLanguage(id: string) {
+    if (!confirm(m.confirmDeleteLanguage)) return;
+    try {
+      await apiCall(`/api/candidate/profile/languages/${id}`, "DELETE");
+      flash(m.languageDeleted);
+    } catch (e) {
+      flash(e instanceof Error ? e.message : m.deleteFailed, true);
+    }
+  }
+
+  function proficiencyLabel(level: string): string {
+    const levels = p.proficiencyLevels as Record<string, string>;
+    return levels[level] ?? level;
+  }
+
   const ExpForm = ({
     data,
     onChange,
@@ -530,12 +662,13 @@ export function ProfileEditor({ email, passport, autoSummary }: ProfileEditorPro
               <div className="space-y-1"><Label className="text-xs">{p.phone}</Label><Input value={contactForm.phone} onChange={(e) => setContactForm({ ...contactForm, phone: e.target.value })} /></div>
               <div className="space-y-1"><Label className="text-xs">{p.linkedIn}</Label><Input value={contactForm.linkedIn} onChange={(e) => setContactForm({ ...contactForm, linkedIn: e.target.value })} /></div>
               <div className="space-y-1"><Label className="text-xs">{p.github}</Label><Input value={contactForm.github} onChange={(e) => setContactForm({ ...contactForm, github: e.target.value })} /></div>
+              <div className="space-y-1"><Label className="text-xs">{p.portfolio}</Label><Input value={contactForm.portfolio} onChange={(e) => setContactForm({ ...contactForm, portfolio: e.target.value })} /></div>
               <div className="space-y-1"><Label className="text-xs">{p.city}</Label><Input value={contactForm.city} onChange={(e) => setContactForm({ ...contactForm, city: e.target.value })} /></div>
               <div className="space-y-1"><Label className="text-xs">{p.country}</Label><Input value={contactForm.country} onChange={(e) => setContactForm({ ...contactForm, country: e.target.value })} /></div>
               <div className="space-y-1 sm:col-span-2"><Label className="text-xs">{p.technologies}</Label><Input value={contactForm.technologies} onChange={(e) => setContactForm({ ...contactForm, technologies: e.target.value })} /></div>
               <div className="space-y-1 sm:col-span-2">
                 <Label className="text-xs">{p.personalNotes}</Label>
-                <textarea className="flex min-h-[60px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm" value={contactForm.professionalSummary} onChange={(e) => setContactForm({ ...contactForm, professionalSummary: e.target.value })} />
+                <textarea className="flex min-h-[60px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm" value={contactForm.careerGoals} onChange={(e) => setContactForm({ ...contactForm, careerGoals: e.target.value })} />
               </div>
             </div>
           ) : (
@@ -545,7 +678,41 @@ export function ProfileEditor({ email, passport, autoSummary }: ProfileEditorPro
               <div><span className="text-muted-foreground">{p.phone}: </span>{passport.phone || t.common.empty}</div>
               <div><span className="text-muted-foreground">{p.linkedIn}: </span>{passport.linkedIn || t.common.empty}</div>
               <div><span className="text-muted-foreground">{p.github}: </span>{passport.github || t.common.empty}</div>
+              <div><span className="text-muted-foreground">{p.portfolio}: </span>{passport.portfolio || t.common.empty}</div>
+              <div><span className="text-muted-foreground">{p.city}: </span>{passport.city || t.common.empty}</div>
+              <div><span className="text-muted-foreground">{p.country}: </span>{passport.country || t.common.empty}</div>
             </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <div>
+            <CardTitle>{p.resumeSummaryTitle}</CardTitle>
+            <CardDescription>{p.resumeSummaryDesc}</CardDescription>
+          </div>
+          {editingSummary ? (
+            <div className="flex gap-2">
+              <Button size="sm" variant="ghost" onClick={() => setEditingSummary(false)}><X className="mr-1 h-4 w-4" />{t.common.cancel}</Button>
+              <Button size="sm" onClick={handleSaveSummary} disabled={saving}><Save className="mr-1 h-4 w-4" />{t.common.save}</Button>
+            </div>
+          ) : (
+            <Button size="sm" variant="outline" onClick={() => setEditingSummary(true)}><Pencil className="mr-1 h-4 w-4" />{t.common.edit}</Button>
+          )}
+        </CardHeader>
+        <CardContent>
+          {editingSummary ? (
+            <textarea
+              className="flex min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              value={summaryText}
+              onChange={(e) => setSummaryText(e.target.value)}
+              placeholder={p.resumeSummaryPlaceholder}
+            />
+          ) : (
+            <p className="text-sm leading-relaxed whitespace-pre-wrap">
+              {passport.professionalSummary || t.common.empty}
+            </p>
           )}
         </CardContent>
       </Card>
@@ -684,6 +851,111 @@ export function ProfileEditor({ email, passport, autoSummary }: ProfileEditorPro
                     <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive" onClick={() => deleteEducation(edu.id)}><Trash2 className="h-4 w-4" /></Button>
                   </div>
                 </div>
+              )}
+            </div>
+          ))}
+        </CardContent>
+      </Card>
+
+      {/* Projects */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle>{p.projectsTitle} ({passport.projects.length})</CardTitle>
+          <Button size="sm" variant="outline" onClick={() => setAddingProject(!addingProject)}><Plus className="mr-1 h-4 w-4" />{t.common.add}</Button>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {addingProject && (
+            <div className="space-y-3 rounded-lg border bg-muted/20 p-4">
+              <div className="space-y-1"><Label className="text-xs">{p.projectTitle}</Label><Input value={newProject.title} onChange={(e) => setNewProject({ ...newProject, title: e.target.value })} /></div>
+              <div className="space-y-1"><Label className="text-xs">{p.projectDescription}</Label><textarea className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm" value={newProject.description} onChange={(e) => setNewProject({ ...newProject, description: e.target.value })} /></div>
+              <div className="space-y-1"><Label className="text-xs">{p.projectTechnologies}</Label><Input value={newProject.technologies} onChange={(e) => setNewProject({ ...newProject, technologies: e.target.value })} /></div>
+              <div className="flex gap-2">
+                <Button size="sm" onClick={addProject} disabled={saving || !newProject.title.trim()}>{t.common.add}</Button>
+                <Button size="sm" variant="ghost" onClick={() => setAddingProject(false)}>{t.common.cancel}</Button>
+              </div>
+            </div>
+          )}
+          {passport.projects.length === 0 && !addingProject && (
+            <p className="text-sm text-muted-foreground">{t.common.empty}</p>
+          )}
+          {passport.projects.map((project) => (
+            <div key={project.id} className="rounded-lg border p-4 space-y-3">
+              {editProject[project.id] ? (
+                <>
+                  <div className="space-y-1"><Label className="text-xs">{p.projectTitle}</Label><Input value={editProject[project.id].title} onChange={(e) => setEditProject({ ...editProject, [project.id]: { ...editProject[project.id], title: e.target.value } })} /></div>
+                  <div className="space-y-1"><Label className="text-xs">{p.projectDescription}</Label><textarea className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm" value={editProject[project.id].description} onChange={(e) => setEditProject({ ...editProject, [project.id]: { ...editProject[project.id], description: e.target.value } })} /></div>
+                  <div className="space-y-1"><Label className="text-xs">{p.projectTechnologies}</Label><Input value={editProject[project.id].technologies} onChange={(e) => setEditProject({ ...editProject, [project.id]: { ...editProject[project.id], technologies: e.target.value } })} /></div>
+                  <div className="flex gap-2">
+                    <Button size="sm" onClick={() => saveProject(project.id)}>{t.common.save}</Button>
+                    <Button size="sm" variant="ghost" onClick={() => { const n = { ...editProject }; delete n[project.id]; setEditProject(n); }}>{t.common.cancel}</Button>
+                  </div>
+                </>
+              ) : (
+                <div className="flex justify-between items-start gap-2">
+                  <div>
+                    <p className="font-medium">{project.title}</p>
+                    {project.description && <p className="text-sm text-muted-foreground mt-1">{project.description}</p>}
+                    {project.technologies.length > 0 && (
+                      <p className="text-xs text-muted-foreground mt-1">{project.technologies.join(", ")}</p>
+                    )}
+                  </div>
+                  <div className="flex gap-1 shrink-0">
+                    <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => setEditProject({ ...editProject, [project.id]: { title: project.title, description: project.description ?? "", technologies: project.technologies.join(", ") } })}><Pencil className="h-4 w-4" /></Button>
+                    <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive" onClick={() => deleteProject(project.id)}><Trash2 className="h-4 w-4" /></Button>
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+        </CardContent>
+      </Card>
+
+      {/* Languages */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle>{p.languagesTitle} ({passport.languages.length})</CardTitle>
+          <Button size="sm" variant="outline" onClick={() => setAddingLanguage(!addingLanguage)}><Plus className="mr-1 h-4 w-4" />{t.common.add}</Button>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {addingLanguage && (
+            <div className="flex flex-wrap gap-2 items-end">
+              <div className="space-y-1"><Label className="text-xs">{p.languageName}</Label><Input value={newLanguage.name} onChange={(e) => setNewLanguage({ ...newLanguage, name: e.target.value })} className="max-w-xs" /></div>
+              <div className="space-y-1">
+                <Label className="text-xs">{p.languageProficiency}</Label>
+                <select className="h-9 rounded-md border border-input bg-background px-3 text-sm" value={newLanguage.proficiency} onChange={(e) => setNewLanguage({ ...newLanguage, proficiency: e.target.value as typeof newLanguage.proficiency })}>
+                  {proficiencyOptions.map((level) => (
+                    <option key={level} value={level}>{proficiencyLabel(level)}</option>
+                  ))}
+                </select>
+              </div>
+              <Button size="sm" onClick={addLanguage} disabled={saving || !newLanguage.name.trim()}>{t.common.add}</Button>
+              <Button size="sm" variant="ghost" onClick={() => setAddingLanguage(false)}>{t.common.cancel}</Button>
+            </div>
+          )}
+          {passport.languages.length === 0 && !addingLanguage && (
+            <p className="text-sm text-muted-foreground">{t.common.empty}</p>
+          )}
+          {passport.languages.map((lang) => (
+            <div key={lang.id} className="flex items-center justify-between rounded-lg border p-3">
+              {editLanguage[lang.id] ? (
+                <div className="flex flex-wrap gap-2 items-end flex-1">
+                  <Input value={editLanguage[lang.id].name} onChange={(e) => setEditLanguage({ ...editLanguage, [lang.id]: { ...editLanguage[lang.id], name: e.target.value } })} className="max-w-xs" />
+                  <select className="h-9 rounded-md border border-input bg-background px-3 text-sm" value={editLanguage[lang.id].proficiency} onChange={(e) => setEditLanguage({ ...editLanguage, [lang.id]: { ...editLanguage[lang.id], proficiency: e.target.value as (typeof proficiencyOptions)[number] } })}>
+                    {proficiencyOptions.map((level) => (
+                      <option key={level} value={level}>{proficiencyLabel(level)}</option>
+                    ))}
+                  </select>
+                  <Button size="sm" onClick={() => saveLanguage(lang.id)}>{t.common.save}</Button>
+                  <Button size="sm" variant="ghost" onClick={() => { const n = { ...editLanguage }; delete n[lang.id]; setEditLanguage(n); }}>{t.common.cancel}</Button>
+                </div>
+              ) : (
+                <>
+                  <p className="text-sm"><span className="font-medium">{lang.name}</span> — {proficiencyLabel(lang.proficiency)}</p>
+                  <div className="flex gap-1">
+                    <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => setEditLanguage({ ...editLanguage, [lang.id]: { name: lang.name, proficiency: lang.proficiency as (typeof proficiencyOptions)[number] } })}><Pencil className="h-4 w-4" /></Button>
+                    <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive" onClick={() => deleteLanguage(lang.id)}><Trash2 className="h-4 w-4" /></Button>
+                  </div>
+                </>
               )}
             </div>
           ))}

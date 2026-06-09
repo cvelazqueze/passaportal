@@ -52,6 +52,7 @@ export async function GET(request: Request) {
         education: { orderBy: { sortOrder: "asc" } },
         certifications: { orderBy: { sortOrder: "asc" } },
         projects: { orderBy: { sortOrder: "asc" } },
+        languages: { orderBy: { sortOrder: "asc" } },
       },
     });
     if (!fullPassport) {

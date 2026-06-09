@@ -17,6 +17,8 @@ import {
 import { ThemeToggle } from "@/components/theme-toggle";
 import { LanguageToggle } from "@/components/language-toggle";
 import { useT } from "@/components/locale-provider";
+import { PublicBrandLink } from "@/components/public-brand-link";
+import { ArrowLeft } from "lucide-react";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -61,16 +63,24 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center bg-muted/50 px-4">
-      <div className="absolute right-4 top-4 flex gap-2">
-        <LanguageToggle />
-        <ThemeToggle />
-      </div>
+    <div className="relative flex min-h-screen flex-col bg-muted/50 px-4">
+      <header className="container mx-auto flex h-16 items-center justify-between py-4">
+        <PublicBrandLink />
+        <div className="flex items-center gap-2">
+          <LanguageToggle />
+          <ThemeToggle />
+        </div>
+      </header>
+      <div className="flex flex-1 items-center justify-center pb-12">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold text-lg">
-            P
-          </div>
+          <Link
+            href="/"
+            className="mb-4 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            {t.auth.backToHome}
+          </Link>
           <CardTitle>{t.auth.createAccount}</CardTitle>
           <CardDescription>{t.auth.registerSubtitle}</CardDescription>
         </CardHeader>
@@ -138,6 +148,7 @@ export default function RegisterPage() {
           </CardFooter>
         </form>
       </Card>
+      </div>
     </div>
   );
 }

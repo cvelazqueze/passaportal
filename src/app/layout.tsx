@@ -15,9 +15,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "PassaPortal - Privacy-First Talent Relationship Management",
+  title: "PassaPortal - Your Job Passport for Career Management",
   description:
-    "Manage your professional profile and career opportunities with PassaPortal. Privacy-first talent relationship management platform.",
+    "Build one modular career profile and generate tailored resume versions, match against job descriptions, and track your professional growth. Not a job board — your single source of truth.",
 };
 
 export default async function RootLayout({
