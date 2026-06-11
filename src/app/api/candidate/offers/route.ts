@@ -2,23 +2,25 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { requireCandidateProfile } from "@/lib/candidate/context";
 import { apiError } from "@/lib/api/error";
-import { z } from "zod";
+import { offerBodySchema } from "@/lib/candidate/offer-schema";
 
-const createSchema = z.object({
-  applicationId: z.string(),
-  baseSalary: z.number().optional(),
-  currency: z.string().default("USD"),
-  bonus: z.string().optional(),
-  ptoDays: z.number().optional(),
-  remotePolicy: z.string().optional(),
-  benefits: z.array(z.string()).default([]),
-  contractType: z.string().optional(),
-  equipment: z.string().optional(),
-  insurance: z.string().optional(),
-  flexibility: z.string().optional(),
-  notes: z.string().optional(),
-  isAccepted: z.boolean().default(false),
-});
+function normalizeOfferInput(data: ReturnType<typeof offerBodySchema.parse>) {
+  return {
+    applicationId: data.applicationId,
+    baseSalary: data.baseSalary ?? null,
+    currency: data.currency?.trim() || "USD",
+    bonus: data.bonus?.trim() || null,
+    ptoDays: data.ptoDays ?? null,
+    remotePolicy: data.remotePolicy?.trim() || null,
+    benefits: data.benefits,
+    contractType: data.contractType?.trim() || null,
+    equipment: data.equipment?.trim() || null,
+    insurance: data.insurance?.trim() || null,
+    flexibility: data.flexibility?.trim() || null,
+    notes: data.notes?.trim() || null,
+    isAccepted: data.isAccepted,
+  };
+}
 
 export async function GET() {
   try {
@@ -40,7 +42,7 @@ export async function POST(request: Request) {
   try {
     const { profile } = await requireCandidateProfile();
     const body = await request.json();
-    const parsed = createSchema.safeParse(body);
+    const parsed = offerBodySchema.safeParse(body);
 
     if (!parsed.success) {
       return NextResponse.json(
@@ -57,11 +59,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Opportunity not found" }, { status: 404 });
     }
 
+    const payload = normalizeOfferInput(parsed.data);
+
     const offer = await db.offer.upsert({
       where: { applicationId: parsed.data.applicationId },
-      create: parsed.data,
-      update: parsed.data,
-      include: { application: { select: { title: true, company: true } } },
+      create: payload,
+      update: payload,
+      include: { application: { select: { title: true, company: true, id: true } } },
     });
 
     if (parsed.data.isAccepted) {

@@ -14,7 +14,23 @@ const BREADCRUMB_KEYS: Record<string, keyof Dictionary["nav"]> = {
   insights: "insights",
 };
 
-export function getBreadcrumbLabel(segment: string, t: Dictionary): string {
+const RECRUITER_BREADCRUMB_KEYS: Record<string, keyof Dictionary["nav"]> = {
+  jobs: "recruiterJobs",
+  candidates: "recruiterCandidates",
+  pools: "recruiterPools",
+  interviews: "recruiterInterviews",
+  search: "recruiterSearch",
+};
+
+export function getBreadcrumbLabel(
+  segment: string,
+  t: Dictionary,
+  pathname?: string
+): string {
+  if (pathname?.startsWith("/recruiter")) {
+    const recruiterKey = RECRUITER_BREADCRUMB_KEYS[segment];
+    if (recruiterKey) return t.nav[recruiterKey];
+  }
   const key = BREADCRUMB_KEYS[segment];
   return key ? t.nav[key] : segment;
 }
@@ -24,6 +40,17 @@ export function translatePipelineStage(
   t: Dictionary
 ): string {
   return t.pipeline[name as keyof Dictionary["pipeline"]] ?? name;
+}
+
+export function translateInterviewType(
+  type: string,
+  t: Dictionary
+): string {
+  return (
+    t.interviews.interviewTypes[
+      type as keyof Dictionary["interviews"]["interviewTypes"]
+    ] ?? type
+  );
 }
 
 export function formatRelativeTimeLocalized(

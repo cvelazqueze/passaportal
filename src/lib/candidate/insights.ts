@@ -48,13 +48,13 @@ export async function generateCandidateInsights(
 
   const insights = buildInsightMessages(locale, {
     applicationToInterviewRate: analytics.applicationToInterviewRate,
-    topTech: analytics.topTechnologies[0],
     topRejectionStage: rejections.byStage[0],
     topRejectionReason: rejections.byReason[0],
     responseRate,
     resumeVersionCount: resumeVersions.length,
     salaryAppliedAvg: analytics.salaryApplied.avg ?? undefined,
     salaryOfferedAvg: analytics.salaryOffered.avg ?? undefined,
+    improvementAreas: analytics.improvementAreas,
   });
 
   if (insights.length === 0) {

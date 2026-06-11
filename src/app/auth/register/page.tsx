@@ -37,7 +37,7 @@ export default function RegisterPage() {
       lastName: formData.get("lastName") as string,
       email: formData.get("email") as string,
       password: formData.get("password") as string,
-      role: formData.get("role") as string,
+      role: "CANDIDATE" as const,
     };
 
     try {
@@ -121,18 +121,6 @@ export default function RegisterPage() {
                 minLength={8}
               />
               <p className="text-xs text-muted-foreground">{t.auth.passwordHint}</p>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="role">{t.auth.iAmA}</Label>
-              <select
-                id="role"
-                name="role"
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                defaultValue="CANDIDATE"
-              >
-                <option value="CANDIDATE">{t.auth.candidate}</option>
-                <option value="RECRUITER">{t.auth.recruiter}</option>
-              </select>
             </div>
           </CardContent>
           <CardFooter className="flex flex-col gap-4">

@@ -2,20 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { requireCandidateProfile } from "@/lib/candidate/context";
 import { apiError } from "@/lib/api/error";
-import { z } from "zod";
-import { InterviewType } from "@prisma/client";
-
-const createSchema = z.object({
-  applicationId: z.string(),
-  interviewDate: z.string().datetime(),
-  interviewType: z.nativeEnum(InterviewType),
-  interviewer: z.string().optional(),
-  notes: z.string().optional(),
-  outcome: z.string().optional(),
-  lessonsLearned: z.string().optional(),
-  technicalQuestions: z.array(z.string()).default([]),
-  behavioralQuestions: z.array(z.string()).default([]),
-});
+import { interviewBodySchema, toInterviewDate } from "@/lib/candidate/interview-schema";
 
 export async function GET() {
   try {
@@ -45,7 +32,7 @@ export async function POST(request: Request) {
   try {
     const { profile } = await requireCandidateProfile();
     const body = await request.json();
-    const parsed = createSchema.safeParse(body);
+    const parsed = interviewBodySchema.safeParse(body);
 
     if (!parsed.success) {
       return NextResponse.json(
@@ -65,12 +52,12 @@ export async function POST(request: Request) {
     const session = await db.candidateInterviewSession.create({
       data: {
         applicationId: parsed.data.applicationId,
-        interviewDate: new Date(parsed.data.interviewDate),
+        interviewDate: toInterviewDate(parsed.data.interviewDate),
         interviewType: parsed.data.interviewType,
-        interviewer: parsed.data.interviewer,
-        notes: parsed.data.notes,
-        outcome: parsed.data.outcome,
-        lessonsLearned: parsed.data.lessonsLearned,
+        interviewer: parsed.data.interviewer?.trim() || null,
+        notes: parsed.data.notes?.trim() || null,
+        outcome: parsed.data.outcome?.trim() || null,
+        lessonsLearned: parsed.data.lessonsLearned?.trim() || null,
         questions: {
           create: [
             ...parsed.data.technicalQuestions.map((q) => ({

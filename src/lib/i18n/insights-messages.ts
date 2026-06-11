@@ -1,19 +1,20 @@
 import type { Locale } from "./types";
-import { getDictionary } from "./index";
+import { getDictionary, interpolate } from "./index";
 import { translatePipelineStage } from "./helpers";
 import type { CandidateInsight } from "@/lib/candidate/insights";
+import type { ImprovementArea } from "@/lib/candidate/analytics";
 
 export function buildInsightMessages(
   locale: Locale,
   data: {
     applicationToInterviewRate: number;
-    topTech?: { name: string; count: number };
     topRejectionStage?: { stage: string; count: number };
     topRejectionReason?: { reason: string; count: number };
     responseRate: number;
     resumeVersionCount: number;
     salaryAppliedAvg?: number;
     salaryOfferedAvg?: number;
+    improvementAreas?: ImprovementArea[];
   }
 ) {
   const t = getDictionary(locale);
@@ -34,21 +35,27 @@ export function buildInsightMessages(
     });
   }
 
-  if (data.topTech) {
-    const { name, count } = data.topTech;
-    insights.push({
-      id: "top-tech",
-      type: "technology",
-      title:
-        locale === "es"
-          ? `${name} es tu tecnología más postulada`
-          : `${name} is your most applied technology`,
-      description:
-        locale === "es"
-          ? `Has postulado a ${count} oportunidades que mencionan ${name}. Enfoca tu búsqueda en roles con esta habilidad.`
-          : `You've applied to ${count} opportunities mentioning ${name}. Focus your search on roles emphasizing this skill.`,
-      priority: "medium",
-    });
+  const topImprovement = data.improvementAreas?.find(
+    (area) => area.severity === "high" && area.id !== "on_track"
+  );
+  if (topImprovement) {
+    const board = t.analytics.improvementBoard;
+    const entry = board.items[topImprovement.id as keyof typeof board.items];
+    if (entry) {
+      const vars = Object.fromEntries(
+        Object.entries(topImprovement.vars ?? {}).map(([k, v]) => [k, String(v)])
+      );
+      if (vars.stage) {
+        vars.stage = stageLabel(vars.stage);
+      }
+      insights.push({
+        id: `improvement-${topImprovement.id}`,
+        type: topImprovement.category === "rejections" ? "rejection" : "general",
+        title: interpolate(entry.title, vars),
+        description: interpolate(entry.description, vars),
+        priority: topImprovement.severity,
+      });
+    }
   }
 
   if (data.topRejectionStage) {

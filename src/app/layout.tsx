@@ -17,7 +17,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "PassaPortal - Your Job Passport for Career Management",
   description:
-    "Build one modular career profile and generate tailored resume versions, match against job descriptions, and track your professional growth. Not a job board — your single source of truth.",
+    "Build one modular career profile, match against job descriptions, export your resume, and track your professional growth. Not a job board — your single source of truth.",
   appleWebApp: {
     capable: true,
     title: "PassaPortal",

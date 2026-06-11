@@ -1,13 +1,12 @@
 import Link from "next/link";
 import { auth } from "@/lib/auth";
-import { getRoleDashboardPath } from "@/lib/rbac/permissions";
+import { getCandidateDashboardPath } from "@/lib/candidate-only";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { LanguageToggle } from "@/components/language-toggle";
 import { PublicBrandLink } from "@/components/public-brand-link";
 import {
   FileText,
-  Layers,
   Target,
   TrendingUp,
   ArrowRight,
@@ -18,7 +17,7 @@ import { getServerDictionary } from "@/lib/i18n/server";
 export default async function HomePage() {
   const session = await auth();
   const dashboardPath = session?.user
-    ? getRoleDashboardPath(session.user.role)
+    ? getCandidateDashboardPath(session.user.role)
     : null;
 
   const { t } = await getServerDictionary();
@@ -28,11 +27,6 @@ export default async function HomePage() {
       icon: FileText,
       title: t.landing.jobPassport,
       description: t.landing.jobPassportDesc,
-    },
-    {
-      icon: Layers,
-      title: t.landing.tailoredResumes,
-      description: t.landing.tailoredResumesDesc,
     },
     {
       icon: Target,

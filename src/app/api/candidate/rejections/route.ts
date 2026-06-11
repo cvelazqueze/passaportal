@@ -3,20 +3,15 @@ import { db } from "@/lib/db";
 import { requireCandidateProfile } from "@/lib/candidate/context";
 import { apiError } from "@/lib/api/error";
 import { getRejectionInsights } from "@/lib/candidate/analytics";
-import { z } from "zod";
-
-const createSchema = z.object({
-  applicationId: z.string(),
-  reasonId: z.string().optional(),
-  stageName: z.string().optional(),
-  candidateNotes: z.string().optional(),
-  rejectedAt: z.string().datetime().optional(),
-});
+import {
+  rejectionBodySchema,
+  toRejectionDate,
+} from "@/lib/candidate/rejection-schema";
 
 export async function GET() {
   try {
     const { profile } = await requireCandidateProfile();
-    const [insights, reasons] = await Promise.all([
+    const [insights, reasons, records] = await Promise.all([
       getRejectionInsights(profile.id),
       db.rejectionReason.findMany({
         where: {
@@ -27,8 +22,16 @@ export async function GET() {
         },
         orderBy: { label: "asc" },
       }),
+      db.rejectionRecord.findMany({
+        where: { application: { candidateProfileId: profile.id } },
+        include: {
+          reason: true,
+          application: { select: { title: true, company: true } },
+        },
+        orderBy: { rejectedAt: "desc" },
+      }),
     ]);
-    return NextResponse.json({ insights, reasons });
+    return NextResponse.json({ insights, reasons, records });
   } catch (error) {
     return apiError(error);
   }
@@ -38,7 +41,7 @@ export async function POST(request: Request) {
   try {
     const { profile } = await requireCandidateProfile();
     const body = await request.json();
-    const parsed = createSchema.safeParse(body);
+    const parsed = rejectionBodySchema.safeParse(body);
 
     if (!parsed.success) {
       return NextResponse.json(
@@ -59,14 +62,17 @@ export async function POST(request: Request) {
     const record = await db.rejectionRecord.create({
       data: {
         applicationId: parsed.data.applicationId,
-        reasonId: parsed.data.reasonId,
-        stageName: parsed.data.stageName ?? app.pipelineStage?.name,
-        candidateNotes: parsed.data.candidateNotes,
+        reasonId: parsed.data.reasonId || null,
+        stageName: parsed.data.stageName?.trim() || app.pipelineStage?.name || null,
+        candidateNotes: parsed.data.candidateNotes?.trim() || null,
         rejectedAt: parsed.data.rejectedAt
-          ? new Date(parsed.data.rejectedAt)
+          ? toRejectionDate(parsed.data.rejectedAt)
           : new Date(),
       },
-      include: { reason: true, application: { select: { title: true, company: true } } },
+      include: {
+        reason: true,
+        application: { select: { title: true, company: true } },
+      },
     });
 
     const rejectedStage = await db.candidatePipelineStage.findFirst({

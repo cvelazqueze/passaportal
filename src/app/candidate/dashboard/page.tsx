@@ -17,7 +17,6 @@ import Link from "next/link";
 import {
   Briefcase,
   Calendar,
-  FileText,
   TrendingUp,
   Lightbulb,
   Target,
@@ -40,15 +39,7 @@ export default async function CandidateDashboard() {
   const profile = await db.candidateProfile.findUnique({
     where: { userId: session.user.id },
     include: {
-      talentPassport: {
-        include: {
-          resumeVersions: {
-            where: { status: "ACTIVE" },
-            take: 3,
-            orderBy: { updatedAt: "desc" },
-          },
-        },
-      },
+      talentPassport: true,
       applications: {
         take: 5,
         orderBy: { updatedAt: "desc" },
@@ -96,7 +87,7 @@ export default async function CandidateDashboard() {
           description={t.dashboard.subtitle}
         />
 
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           <StatCard
             title={t.dashboard.profileCompleteness}
             value={`${completeness}%`}
@@ -112,11 +103,6 @@ export default async function CandidateDashboard() {
             value={`${analytics.applicationToInterviewRate}%`}
             description={t.dashboard.appsToInterviews}
             icon={<Calendar className="h-4 w-4 text-muted-foreground" />}
-          />
-          <StatCard
-            title={t.dashboard.resumeVersions}
-            value={passport?.resumeVersions.length ?? 0}
-            icon={<FileText className="h-4 w-4 text-muted-foreground" />}
           />
         </div>
 

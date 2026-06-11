@@ -153,18 +153,8 @@ export function hasAllPermissions(
 }
 
 export function getRoleDashboardPath(role: UserRole): string {
-  switch (role) {
-    case UserRole.CANDIDATE:
-      return "/candidate/dashboard";
-    case UserRole.RECRUITER:
-      return "/recruiter/dashboard";
-    case UserRole.HIRING_MANAGER:
-      return "/hiring-manager/dashboard";
-    case UserRole.AGENCY_ADMIN:
-      return "/admin/dashboard";
-    case UserRole.PLATFORM_ADMIN:
-      return "/platform/dashboard";
-    default:
-      return "/";
+  if (role === UserRole.CANDIDATE) {
+    return "/candidate/dashboard";
   }
+  return "/";
 }

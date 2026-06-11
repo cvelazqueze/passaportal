@@ -17,12 +17,14 @@ import {
   Briefcase,
   Calendar,
   DollarSign,
-  TrendingUp,
+  Target,
   XCircle,
   Ghost,
+  CheckCircle2,
 } from "lucide-react";
 import { getServerDictionary } from "@/lib/i18n/server";
 import { interpolate } from "@/lib/i18n";
+import { translatePipelineStage } from "@/lib/i18n/helpers";
 
 function formatSalary(amount: number | null, locale: string) {
   if (!amount) return "—";
@@ -34,12 +36,19 @@ function formatSalary(amount: number | null, locale: string) {
   }).format(amount);
 }
 
+const severityVariant = {
+  high: "destructive",
+  medium: "secondary",
+  low: "outline",
+} as const;
+
 export default async function AnalyticsPage() {
   const session = await auth();
   if (!session?.user) redirect("/auth/login");
 
   const { locale, t } = await getServerDictionary();
   const a = t.analytics;
+  const board = a.improvementBoard;
 
   const profile = await db.candidateProfile.findUnique({
     where: { userId: session.user.id },
@@ -57,13 +66,38 @@ export default async function AnalyticsPage() {
           <h3 className="mb-3 text-sm font-semibold text-muted-foreground uppercase tracking-wide">
             {a.activityMetrics}
           </h3>
-          <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-6">
-            <StatCard title={a.applications} value={analytics.applicationsSubmitted} icon={<Briefcase className="h-4 w-4 text-muted-foreground" />} />
-            <StatCard title={a.interviews} value={analytics.interviews} icon={<Calendar className="h-4 w-4 text-muted-foreground" />} />
+          <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-7">
+            <StatCard
+              title={a.applications}
+              value={analytics.applicationsSubmitted}
+              icon={<Briefcase className="h-4 w-4 text-muted-foreground" />}
+            />
+            <StatCard
+              title={a.interviews}
+              value={analytics.interviews}
+              icon={<Calendar className="h-4 w-4 text-muted-foreground" />}
+            />
             <StatCard title={a.technical} value={analytics.technicalInterviews} />
-            <StatCard title={a.offers} value={analytics.offers} icon={<DollarSign className="h-4 w-4 text-muted-foreground" />} />
-            <StatCard title={a.rejections} value={analytics.rejections} icon={<XCircle className="h-4 w-4 text-muted-foreground" />} />
-            <StatCard title={a.ghosted} value={analytics.ghosted} icon={<Ghost className="h-4 w-4 text-muted-foreground" />} />
+            <StatCard
+              title={a.offers}
+              value={analytics.offers}
+              icon={<DollarSign className="h-4 w-4 text-muted-foreground" />}
+            />
+            <StatCard
+              title={a.accepted}
+              value={analytics.accepted}
+              icon={<CheckCircle2 className="h-4 w-4 text-muted-foreground" />}
+            />
+            <StatCard
+              title={a.rejections}
+              value={analytics.rejections}
+              icon={<XCircle className="h-4 w-4 text-muted-foreground" />}
+            />
+            <StatCard
+              title={a.ghosted}
+              value={analytics.ghosted}
+              icon={<Ghost className="h-4 w-4 text-muted-foreground" />}
+            />
           </div>
         </div>
 
@@ -77,8 +111,13 @@ export default async function AnalyticsPage() {
                 <CardTitle className="text-sm">{a.appToInterview}</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{analytics.applicationToInterviewRate}%</div>
-                <Progress value={analytics.applicationToInterviewRate} className="mt-2" />
+                <div className="text-2xl font-bold">
+                  {analytics.applicationToInterviewRate}%
+                </div>
+                <Progress
+                  value={analytics.applicationToInterviewRate}
+                  className="mt-2"
+                />
               </CardContent>
             </Card>
             <Card>
@@ -86,7 +125,9 @@ export default async function AnalyticsPage() {
                 <CardTitle className="text-sm">{a.interviewToOffer}</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{analytics.interviewToOfferRate}%</div>
+                <div className="text-2xl font-bold">
+                  {analytics.interviewToOfferRate}%
+                </div>
                 <Progress value={analytics.interviewToOfferRate} className="mt-2" />
               </CardContent>
             </Card>
@@ -95,8 +136,13 @@ export default async function AnalyticsPage() {
                 <CardTitle className="text-sm">{a.offerToAccepted}</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{analytics.offerToAcceptanceRate}%</div>
-                <Progress value={analytics.offerToAcceptanceRate} className="mt-2" />
+                <div className="text-2xl font-bold">
+                  {analytics.offerToAcceptanceRate}%
+                </div>
+                <Progress
+                  value={analytics.offerToAcceptanceRate}
+                  className="mt-2"
+                />
               </CardContent>
             </Card>
           </div>
@@ -116,15 +162,21 @@ export default async function AnalyticsPage() {
                 <div className="grid grid-cols-3 gap-2 text-sm">
                   <div>
                     <p className="text-muted-foreground">{a.avg}</p>
-                    <p className="font-medium">{formatSalary(analytics.salaryApplied.avg, locale)}</p>
+                    <p className="font-medium">
+                      {formatSalary(analytics.salaryApplied.avg, locale)}
+                    </p>
                   </div>
                   <div>
                     <p className="text-muted-foreground">{a.min}</p>
-                    <p className="font-medium">{formatSalary(analytics.salaryApplied.min, locale)}</p>
+                    <p className="font-medium">
+                      {formatSalary(analytics.salaryApplied.min, locale)}
+                    </p>
                   </div>
                   <div>
                     <p className="text-muted-foreground">{a.max}</p>
-                    <p className="font-medium">{formatSalary(analytics.salaryApplied.max, locale)}</p>
+                    <p className="font-medium">
+                      {formatSalary(analytics.salaryApplied.max, locale)}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -133,15 +185,21 @@ export default async function AnalyticsPage() {
                 <div className="grid grid-cols-3 gap-2 text-sm">
                   <div>
                     <p className="text-muted-foreground">{a.avg}</p>
-                    <p className="font-medium">{formatSalary(analytics.salaryOffered.avg, locale)}</p>
+                    <p className="font-medium">
+                      {formatSalary(analytics.salaryOffered.avg, locale)}
+                    </p>
                   </div>
                   <div>
                     <p className="text-muted-foreground">{a.min}</p>
-                    <p className="font-medium">{formatSalary(analytics.salaryOffered.min, locale)}</p>
+                    <p className="font-medium">
+                      {formatSalary(analytics.salaryOffered.min, locale)}
+                    </p>
                   </div>
                   <div>
                     <p className="text-muted-foreground">{a.max}</p>
-                    <p className="font-medium">{formatSalary(analytics.salaryOffered.max, locale)}</p>
+                    <p className="font-medium">
+                      {formatSalary(analytics.salaryOffered.max, locale)}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -151,26 +209,49 @@ export default async function AnalyticsPage() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <TrendingUp className="h-4 w-4" />
-                {a.topTechnologies}
+                <Target className="h-4 w-4" />
+                {board.title}
               </CardTitle>
-              <CardDescription>{a.topTechnologiesDesc}</CardDescription>
+              <CardDescription>{board.description}</CardDescription>
             </CardHeader>
-            <CardContent>
-              {analytics.topTechnologies.length === 0 ? (
-                <p className="text-sm text-muted-foreground">{a.noTechData}</p>
-              ) : (
-                <div className="space-y-2">
-                  {analytics.topTechnologies.map((tech) => (
-                    <div key={tech.name} className="flex items-center justify-between">
-                      <Badge variant="outline">{tech.name}</Badge>
-                      <span className="text-sm text-muted-foreground">
-                        {interpolate(a.opportunitiesCount, { count: tech.count })}
-                      </span>
+            <CardContent className="space-y-4">
+              {analytics.improvementAreas.map((area) => {
+                const entry =
+                  board.items[area.id as keyof typeof board.items];
+                if (!entry) return null;
+
+                const vars = Object.fromEntries(
+                  Object.entries(area.vars ?? {}).map(([k, v]) => [k, String(v)])
+                );
+                if (vars.stage) {
+                  vars.stage = translatePipelineStage(vars.stage, t);
+                }
+
+                return (
+                  <div
+                    key={area.id}
+                    className="rounded-lg border p-4 space-y-2"
+                  >
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Badge variant={severityVariant[area.severity]}>
+                        {board.severity[area.severity]}
+                      </Badge>
+                      <Badge variant="outline">
+                        {board.categories[area.category]}
+                      </Badge>
                     </div>
-                  ))}
-                </div>
-              )}
+                    <p className="font-medium text-sm">
+                      {interpolate(entry.title, vars)}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      {interpolate(entry.description, vars)}
+                    </p>
+                    <p className="text-sm text-primary">
+                      {interpolate(entry.action, vars)}
+                    </p>
+                  </div>
+                );
+              })}
             </CardContent>
           </Card>
         </div>

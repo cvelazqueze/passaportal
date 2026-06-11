@@ -1,11 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { signIn } from "next-auth/react";
-import { UserRole } from "@prisma/client";
-import { getRoleDashboardPath } from "@/lib/rbac/permissions";
+import { signIn, signOut } from "next-auth/react";
+import {
+  CANDIDATE_APP_DASHBOARD,
+  getCandidateDashboardPath,
+  isAllowedCallbackUrl,
+  isCandidateRole,
+} from "@/lib/candidate-only";
 import { PublicBrandLink } from "@/components/public-brand-link";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -30,6 +34,13 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  useEffect(() => {
+    if (searchParams.get("error") === "candidateOnly") {
+      setError(t.auth.candidateOnly);
+      void signOut({ redirect: false });
+    }
+  }, [searchParams, t.auth.candidateOnly]);
+
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setLoading(true);
@@ -51,17 +62,25 @@ export default function LoginPage() {
       return;
     }
 
+    const sessionRes = await fetch("/api/auth/session");
+    const session = await sessionRes.json();
+    const role = session?.user?.role as string | undefined;
+
+    if (!isCandidateRole(role)) {
+      await signOut({ redirect: false });
+      setError(t.auth.candidateOnly);
+      setLoading(false);
+      return;
+    }
+
     const callbackUrl = searchParams.get("callbackUrl");
-    if (callbackUrl && callbackUrl.startsWith("/") && !callbackUrl.startsWith("//")) {
+    if (callbackUrl && isAllowedCallbackUrl(callbackUrl)) {
       router.push(callbackUrl);
       router.refresh();
       return;
     }
 
-    const sessionRes = await fetch("/api/auth/session");
-    const session = await sessionRes.json();
-    const role = session?.user?.role as UserRole | undefined;
-    router.push(role ? getRoleDashboardPath(role) : "/");
+    router.push(getCandidateDashboardPath(role) ?? CANDIDATE_APP_DASHBOARD);
     router.refresh();
   }
 

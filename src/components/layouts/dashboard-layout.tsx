@@ -9,15 +9,10 @@ import {
   FileText,
   Briefcase,
   Calendar,
-  Settings,
   LogOut,
   Bell,
-  Search,
   BarChart3,
-  Building2,
-  Shield,
   User,
-  Users,
   Target,
   Lightbulb,
   XCircle,
@@ -56,54 +51,8 @@ const candidateNav: NavItem[] = [
   { labelKey: "insights", href: "/candidate/insights", icon: Lightbulb },
 ];
 
-const recruiterNav: NavItem[] = [
-  { label: "Dashboard", href: "/recruiter/dashboard", icon: LayoutDashboard },
-  { label: "Jobs", href: "/recruiter/jobs", icon: Briefcase },
-  { label: "Candidates", href: "/recruiter/candidates", icon: Users },
-  { label: "Talent Pools", href: "/recruiter/pools", icon: Users },
-  { label: "Interviews", href: "/recruiter/interviews", icon: Calendar },
-  { label: "Search", href: "/recruiter/search", icon: Search },
-];
-
-const hiringManagerNav: NavItem[] = [
-  { label: "Dashboard", href: "/hiring-manager/dashboard", icon: LayoutDashboard },
-  { label: "Candidates", href: "/hiring-manager/candidates", icon: Users },
-  { label: "Interviews", href: "/hiring-manager/interviews", icon: Calendar },
-  { label: "Scorecards", href: "/hiring-manager/scorecards", icon: FileText },
-];
-
-const adminNav: NavItem[] = [
-  { label: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
-  { label: "Team", href: "/admin/team", icon: Users },
-  { label: "Clients", href: "/admin/clients", icon: Building2 },
-  { label: "Reports", href: "/admin/reports", icon: BarChart3 },
-  { label: "Settings", href: "/admin/settings", icon: Settings },
-];
-
-const platformNav: NavItem[] = [
-  { label: "Dashboard", href: "/platform/dashboard", icon: LayoutDashboard },
-  { label: "Tenants", href: "/platform/tenants", icon: Building2 },
-  { label: "Subscriptions", href: "/platform/subscriptions", icon: FileText },
-  { label: "Audit Logs", href: "/platform/audit", icon: Shield },
-  { label: "Security", href: "/platform/security", icon: Shield },
-  { label: "Settings", href: "/platform/settings", icon: Settings },
-];
-
 function getNavItems(role: UserRole): NavItem[] {
-  switch (role) {
-    case UserRole.CANDIDATE:
-      return candidateNav;
-    case UserRole.RECRUITER:
-      return recruiterNav;
-    case UserRole.HIRING_MANAGER:
-      return hiringManagerNav;
-    case UserRole.AGENCY_ADMIN:
-      return adminNav;
-    case UserRole.PLATFORM_ADMIN:
-      return platformNav;
-    default:
-      return [];
-  }
+  return role === UserRole.CANDIDATE ? candidateNav : [];
 }
 
 function getPageTitle(pathname: string, t: Dictionary): string {
@@ -112,7 +61,7 @@ function getPageTitle(pathname: string, t: Dictionary): string {
       .split("/")
       .filter(Boolean)
       .slice(1)
-      .map((segment) => getBreadcrumbLabel(segment, t))
+      .map((segment) => getBreadcrumbLabel(segment, t, pathname))
       .join(" / ") || t.nav.dashboard
   );
 }
@@ -194,7 +143,10 @@ function Sidebar({
             variant="ghost"
             size="icon"
             className="shrink-0"
-            onClick={() => signOut({ callbackUrl: "/" })}
+            onClick={async () => {
+              await signOut({ redirect: false });
+              window.location.assign("/");
+            }}
           >
             <LogOut className="h-4 w-4" />
           </Button>

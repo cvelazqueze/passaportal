@@ -20,7 +20,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const { firstName, lastName, email, password, role } = parsed.data;
+    const { firstName, lastName, email, password } = parsed.data;
 
     const existing = await db.user.findUnique({ where: { email } });
     if (existing) {
@@ -31,7 +31,6 @@ export async function POST(request: Request) {
     }
 
     const passwordHash = hashPassword(password);
-    const userRole = role === "RECRUITER" ? UserRole.RECRUITER : UserRole.CANDIDATE;
 
     const user = await db.user.create({
       data: {
@@ -39,24 +38,19 @@ export async function POST(request: Request) {
         lastName,
         email,
         passwordHash,
-        role: userRole,
-        ...(userRole === UserRole.CANDIDATE && {
-          candidateProfile: {
-            create: {
-              talentPassport: { create: {} },
-            },
+        role: UserRole.CANDIDATE,
+        candidateProfile: {
+          create: {
+            talentPassport: { create: {} },
           },
-        }),
-        ...(userRole === UserRole.RECRUITER && {
-          recruiterProfile: { create: {} },
-        }),
+        },
       },
       include: {
         candidateProfile: { include: { talentPassport: true } },
       },
     });
 
-    if (userRole === UserRole.CANDIDATE && user.candidateProfile?.talentPassport) {
+    if (user.candidateProfile?.talentPassport) {
       await initializeCandidateWorkspace(
         user.candidateProfile.id,
         user.candidateProfile.talentPassport.id

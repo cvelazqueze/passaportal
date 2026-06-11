@@ -1,5 +1,20 @@
 import { db } from "@/lib/db";
 
+export type ImprovementSeverity = "high" | "medium" | "low";
+export type ImprovementCategory =
+  | "applications"
+  | "interviews"
+  | "offers"
+  | "rejections"
+  | "engagement";
+
+export interface ImprovementArea {
+  id: string;
+  severity: ImprovementSeverity;
+  category: ImprovementCategory;
+  vars?: Record<string, string | number>;
+}
+
 export interface CandidateAnalytics {
   applicationsSubmitted: number;
   interviews: number;
@@ -13,14 +28,13 @@ export interface CandidateAnalytics {
   offerToAcceptanceRate: number;
   salaryApplied: { avg: number | null; min: number | null; max: number | null };
   salaryOffered: { avg: number | null; min: number | null; max: number | null };
-  topTechnologies: { name: string; count: number }[];
-  resumePerformance: { name: string; applications: number; interviews: number }[];
+  improvementAreas: ImprovementArea[];
 }
 
 export async function getCandidateAnalytics(
   candidateProfileId: string
 ): Promise<CandidateAnalytics> {
-  const [applications, interviews, _rejections, offers, stages] = await Promise.all([
+  const [applications, interviews, offers, stages] = await Promise.all([
     db.application.findMany({
       where: { candidateProfileId },
       include: {
@@ -31,9 +45,6 @@ export async function getCandidateAnalytics(
       },
     }),
     db.candidateInterviewSession.findMany({
-      where: { application: { candidateProfileId } },
-    }),
-    db.rejectionRecord.findMany({
       where: { application: { candidateProfileId } },
     }),
     db.offer.findMany({
@@ -90,24 +101,12 @@ export async function getCandidateAnalytics(
   const avg = (nums: number[]) =>
     nums.length ? Math.round(nums.reduce((a, b) => a + b, 0) / nums.length) : null;
 
-  const techCounts = new Map<string, number>();
-  for (const app of applications) {
-    for (const tech of app.technologies) {
-      techCounts.set(tech, (techCounts.get(tech) ?? 0) + 1);
-    }
-  }
-
-  const topTechnologies = Array.from(techCounts.entries())
-    .map(([name, count]) => ({ name, count }))
-    .sort((a, b) => b.count - a.count)
-    .slice(0, 10);
-
   const total = applications.length;
   const withInterviews = interviewStages.length;
   const withOffers = offerApps.length;
   const withAccepted = acceptedApps.length;
 
-  return {
+  const base: CandidateAnalytics = {
     applicationsSubmitted: total,
     interviews: interviews.length,
     technicalInterviews,
@@ -132,9 +131,181 @@ export async function getCandidateAnalytics(
       min: offeredSalaries.length ? Math.min(...offeredSalaries) : null,
       max: offeredSalaries.length ? Math.max(...offeredSalaries) : null,
     },
-    topTechnologies,
-    resumePerformance: [],
+    improvementAreas: [],
   };
+
+  const rejectionInsights = await getRejectionInsights(candidateProfileId);
+  base.improvementAreas = buildImprovementAreas(base, rejectionInsights);
+
+  return base;
+}
+
+const EARLY_STAGES = new Set([
+  "interested",
+  "applied",
+  "recruiter contact",
+  "screening",
+]);
+
+const TECHNICAL_STAGES = new Set([
+  "technical assessment",
+  "technical interview",
+]);
+
+function severityRank(s: ImprovementSeverity): number {
+  return s === "high" ? 0 : s === "medium" ? 1 : 2;
+}
+
+export function buildImprovementAreas(
+  analytics: CandidateAnalytics,
+  rejectionInsights: Awaited<ReturnType<typeof getRejectionInsights>>
+): ImprovementArea[] {
+  const areas: ImprovementArea[] = [];
+
+  if (analytics.applicationsSubmitted === 0) {
+    areas.push({
+      id: "getting_started",
+      severity: "medium",
+      category: "applications",
+    });
+    return areas;
+  }
+
+  if (
+    analytics.applicationsSubmitted >= 3 &&
+    analytics.applicationToInterviewRate < 10
+  ) {
+    areas.push({
+      id: "low_app_interview",
+      severity: "high",
+      category: "applications",
+      vars: { rate: analytics.applicationToInterviewRate },
+    });
+  } else if (
+    analytics.applicationsSubmitted >= 3 &&
+    analytics.applicationToInterviewRate < 15
+  ) {
+    areas.push({
+      id: "moderate_app_interview",
+      severity: "medium",
+      category: "applications",
+      vars: { rate: analytics.applicationToInterviewRate },
+    });
+  }
+
+  if (analytics.interviews >= 2 && analytics.interviewToOfferRate < 25) {
+    areas.push({
+      id: "low_interview_offer",
+      severity: "high",
+      category: "interviews",
+      vars: { rate: analytics.interviewToOfferRate },
+    });
+  } else if (analytics.interviews >= 2 && analytics.interviewToOfferRate < 40) {
+    areas.push({
+      id: "moderate_interview_offer",
+      severity: "medium",
+      category: "interviews",
+      vars: { rate: analytics.interviewToOfferRate },
+    });
+  }
+
+  if (
+    analytics.offers >= 1 &&
+    analytics.accepted < analytics.offers &&
+    analytics.offerToAcceptanceRate < 100
+  ) {
+    areas.push({
+      id: "pending_offer_decisions",
+      severity: "low",
+      category: "offers",
+      vars: {
+        pending: analytics.offers - analytics.accepted,
+        total: analytics.offers,
+      },
+    });
+  }
+
+  const ghostedRate = analytics.applicationsSubmitted
+    ? Math.round((analytics.ghosted / analytics.applicationsSubmitted) * 100)
+    : 0;
+
+  if (analytics.ghosted >= 2 || ghostedRate >= 20) {
+    areas.push({
+      id: "high_ghosted",
+      severity: ghostedRate >= 30 ? "high" : "medium",
+      category: "engagement",
+      vars: { count: analytics.ghosted, rate: ghostedRate },
+    });
+  }
+
+  const topStage = rejectionInsights.byStage[0];
+  if (topStage && topStage.count >= 2) {
+    const stageLower = topStage.stage.toLowerCase();
+    let id = "rejection_stage";
+    const severity: ImprovementSeverity = "high";
+
+    if (EARLY_STAGES.has(stageLower)) {
+      id = "early_stage_rejections";
+    } else if (TECHNICAL_STAGES.has(stageLower)) {
+      id = "technical_stage_rejections";
+    }
+
+    areas.push({
+      id,
+      severity,
+      category: "rejections",
+      vars: { stage: topStage.stage, count: topStage.count },
+    });
+  }
+
+  const topReason = rejectionInsights.byReason[0];
+  if (topReason && topReason.count >= 2) {
+    const reasonLower = topReason.reason.toLowerCase();
+    let id = "rejection_reason";
+    let severity: ImprovementSeverity = "high";
+
+    if (reasonLower.includes("missing experience")) {
+      id = "missing_experience";
+    } else if (reasonLower.includes("technical")) {
+      id = "technical_skill_gap";
+    } else if (reasonLower.includes("no feedback")) {
+      id = "no_feedback";
+      severity = "medium";
+    } else if (reasonLower.includes("salary")) {
+      id = "salary_mismatch";
+    } else if (reasonLower.includes("cultural")) {
+      id = "cultural_fit";
+      severity = "medium";
+    }
+
+    areas.push({
+      id,
+      severity,
+      category: "rejections",
+      vars: { reason: topReason.reason, count: topReason.count },
+    });
+  }
+
+  if (analytics.technicalInterviews >= 3 && analytics.interviewToOfferRate < 30) {
+    areas.push({
+      id: "technical_interview_struggle",
+      severity: "high",
+      category: "interviews",
+      vars: { count: analytics.technicalInterviews },
+    });
+  }
+
+  if (areas.length === 0) {
+    areas.push({
+      id: "on_track",
+      severity: "low",
+      category: "applications",
+    });
+  }
+
+  return areas.sort(
+    (a, b) => severityRank(a.severity) - severityRank(b.severity)
+  );
 }
 
 export async function getRejectionInsights(candidateProfileId: string) {
