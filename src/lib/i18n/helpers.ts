@@ -10,6 +10,7 @@ const BREADCRUMB_KEYS: Record<string, keyof Dictionary["nav"]> = {
   interviews: "interviewHub",
   rejections: "rejections",
   offers: "offers",
+  outreach: "outreach",
   analytics: "analytics",
   insights: "insights",
 };

@@ -71,7 +71,7 @@ export default function LoginPage() {
     <div className="relative flex min-h-screen flex-col bg-muted/50 px-4">
       <header className="container mx-auto flex h-16 items-center justify-between py-4">
         <PublicBrandLink />
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 sm:gap-3">
           <LanguageToggle />
           <ThemeToggle />
         </div>

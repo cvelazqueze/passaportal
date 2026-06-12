@@ -17,6 +17,7 @@ import {
   Lightbulb,
   XCircle,
   DollarSign,
+  Mail,
   Menu,
   X,
 } from "lucide-react";
@@ -44,6 +45,7 @@ const candidateNav: NavItem[] = [
   { labelKey: "resumeHub", href: "/candidate/resumes", icon: FileText },
   { labelKey: "jobWorkspace", href: "/candidate/jobs", icon: Target },
   { labelKey: "opportunities", href: "/candidate/opportunities", icon: Briefcase },
+  { labelKey: "outreach", href: "/candidate/outreach", icon: Mail },
   { labelKey: "interviewHub", href: "/candidate/interviews", icon: Calendar },
   { labelKey: "rejections", href: "/candidate/rejections", icon: XCircle },
   { labelKey: "offers", href: "/candidate/offers", icon: DollarSign },
@@ -130,7 +132,8 @@ function Sidebar({
         })}
       </nav>
 
-      <div className="shrink-0 border-t p-3 md:p-4">
+      <div className="shrink-0 space-y-3 border-t p-3 md:p-4">
+        <LanguageToggle variant="sidebar" />
         <div className="flex items-center gap-3">
           <Avatar className="h-8 w-8 shrink-0">
             <AvatarFallback className="text-xs">{initials}</AvatarFallback>
@@ -231,7 +234,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
             </h1>
           </div>
           <div className="flex shrink-0 items-center gap-1 md:gap-2">
-            <LanguageToggle />
+            <LanguageToggle className="md:hidden" />
             <ThemeToggle />
             <Button variant="ghost" size="icon" aria-label="Notifications">
               <Bell className="h-4 w-4" />

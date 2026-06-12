@@ -54,7 +54,7 @@ export default async function HomePage() {
       <header className="border-b">
         <div className="container mx-auto flex h-14 min-h-14 items-center justify-between gap-2 px-4 sm:h-16">
           <PublicBrandLink />
-          <nav className="flex shrink-0 items-center gap-1 sm:gap-2">
+          <nav className="flex shrink-0 items-center gap-2 sm:gap-3">
             <LanguageToggle />
             <ThemeToggle />
             {dashboardPath ? (

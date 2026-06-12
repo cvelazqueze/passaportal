@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 import { DashboardLayout } from "@/components/layouts/dashboard-layout";
 import { PageHeader } from "@/components/candidate/page-header";
 import {
@@ -243,6 +244,13 @@ export default function JobWorkspacePage() {
                     </ul>
                   </div>
                 )}
+                <Button asChild variant="outline" size="sm" className="mt-2">
+                  <Link
+                    href={`/candidate/outreach?jobTitle=${encodeURIComponent(result.workspace.jobTitle)}&company=${encodeURIComponent(result.workspace.company)}`}
+                  >
+                    {j.generateOutreach}
+                  </Link>
+                </Button>
               </CardContent>
             </Card>
           </div>

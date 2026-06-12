@@ -181,6 +181,12 @@ enum ResumeExportFormat {
   DOCX
 }
 
+enum OutreachKind {
+  COVER_LETTER
+  APPLICATION_EMAIL
+  FOLLOW_UP_EMAIL
+}
+
 // ============================================================================
 // AUTH & USERS
 // ============================================================================
@@ -430,6 +436,7 @@ model CandidateProfile {
   pipelineStages    CandidatePipelineStage[]
   jobWorkspaces     JobDescriptionWorkspace[]
   rejectionReasons  RejectionReason[]
+  outreachDrafts    OutreachDraft[]
 
   @@map("candidate_profiles")
 }
@@ -791,6 +798,7 @@ model Application {
   takeHomeAssignments    TakeHomeAssignment[]
   rejectionRecords       RejectionRecord[]
   offer                  Offer?
+  outreachDrafts         OutreachDraft[]
 
   @@index([candidateProfileId])
   @@index([jobId])
@@ -982,6 +990,27 @@ model JobDescriptionWorkspace {
 
   @@index([candidateProfileId])
   @@map("job_description_workspaces")
+}
+
+model OutreachDraft {
+  id                 String       @id @default(cuid())
+  candidateProfileId String
+  applicationId      String?
+  kind               OutreachKind
+  jobTitle           String
+  company            String
+  recipientName      String?
+  recipientEmail     String?
+  subject            String?
+  body               String       @db.Text
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+
+  candidateProfile CandidateProfile @relation(fields: [candidateProfileId], references: [id], onDelete: Cascade)
+  application      Application?     @relation(fields: [applicationId], references: [id], onDelete: SetNull)
+
+  @@index([candidateProfileId])
+  @@map("outreach_drafts")
 }
 
 model CandidateInterviewSession {
