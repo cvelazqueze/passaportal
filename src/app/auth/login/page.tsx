@@ -2,14 +2,9 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { signIn, signOut } from "next-auth/react";
-import {
-  CANDIDATE_APP_DASHBOARD,
-  getCandidateDashboardPath,
-  isAllowedCallbackUrl,
-  isCandidateRole,
-} from "@/lib/candidate-only";
+import { CANDIDATE_APP_DASHBOARD, isAllowedCallbackUrl } from "@/lib/candidate-only";
 import { PublicBrandLink } from "@/components/public-brand-link";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -28,7 +23,6 @@ import { LanguageToggle } from "@/components/language-toggle";
 import { useT } from "@/components/locale-provider";
 
 export default function LoginPage() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const t = useT();
   const [error, setError] = useState("");
@@ -50,38 +44,27 @@ export default function LoginPage() {
     const email = formData.get("email") as string;
     const password = formData.get("password") as string;
 
+    const callbackUrl = searchParams.get("callbackUrl");
+    const destination =
+      callbackUrl && isAllowedCallbackUrl(callbackUrl)
+        ? callbackUrl
+        : CANDIDATE_APP_DASHBOARD;
+
     const result = await signIn("credentials", {
       email,
       password,
+      callbackUrl: destination,
       redirect: false,
     });
 
-    if (result?.error) {
+    if (result?.error || result?.ok === false) {
       setError(t.auth.invalidCredentials);
       setLoading(false);
       return;
     }
 
-    const sessionRes = await fetch("/api/auth/session");
-    const session = await sessionRes.json();
-    const role = session?.user?.role as string | undefined;
-
-    if (!isCandidateRole(role)) {
-      await signOut({ redirect: false });
-      setError(t.auth.candidateOnly);
-      setLoading(false);
-      return;
-    }
-
-    const callbackUrl = searchParams.get("callbackUrl");
-    if (callbackUrl && isAllowedCallbackUrl(callbackUrl)) {
-      router.push(callbackUrl);
-      router.refresh();
-      return;
-    }
-
-    router.push(getCandidateDashboardPath(role) ?? CANDIDATE_APP_DASHBOARD);
-    router.refresh();
+    // Let NextAuth finish the redirect after the session cookie is set.
+    window.location.href = result?.url ?? destination;
   }
 
   return (
