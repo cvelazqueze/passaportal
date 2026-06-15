@@ -799,6 +799,7 @@ model Application {
   rejectionRecords       RejectionRecord[]
   offer                  Offer?
   outreachDrafts         OutreachDraft[]
+  jobDescriptionWorkspace JobDescriptionWorkspace?
 
   @@index([candidateProfileId])
   @@index([jobId])
@@ -982,13 +983,16 @@ model JobDescriptionWorkspace {
   analysis           Json     @default("{}")
   matchAnalysis      Json     @default("{}")
   resumeVersionId    String?
+  applicationId      String?  @unique
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 
   candidateProfile CandidateProfile @relation(fields: [candidateProfileId], references: [id], onDelete: Cascade)
   resumeVersion    ResumeVersion?   @relation(fields: [resumeVersionId], references: [id], onDelete: SetNull)
+  application      Application?     @relation(fields: [applicationId], references: [id], onDelete: SetNull)
 
   @@index([candidateProfileId])
+  @@index([applicationId])
   @@map("job_description_workspaces")
 }
 

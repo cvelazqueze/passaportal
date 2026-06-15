@@ -16,13 +16,18 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Target } from "lucide-react";
+import { Briefcase, CheckCircle2, Target } from "lucide-react";
 import { useT } from "@/components/locale-provider";
 import { interpolate } from "@/lib/i18n";
 import type { JobAnalysisResult, MatchAnalysisResult } from "@/lib/candidate/job-analysis";
 
 interface WorkspaceResult {
-  workspace: { id: string; jobTitle: string; company: string };
+  workspace: {
+    id: string;
+    jobTitle: string;
+    company: string;
+    applicationId: string | null;
+  };
   analysis: JobAnalysisResult;
   matchAnalysis: MatchAnalysisResult;
 }
@@ -31,6 +36,7 @@ interface SavedWorkspace {
   id: string;
   jobTitle: string;
   company: string;
+  applicationId: string | null;
   analysis: JobAnalysisResult;
   matchAnalysis: MatchAnalysisResult;
   updatedAt: string;
@@ -42,6 +48,7 @@ function toWorkspaceResult(saved: SavedWorkspace): WorkspaceResult {
       id: saved.id,
       jobTitle: saved.jobTitle,
       company: saved.company,
+      applicationId: saved.applicationId,
     },
     analysis: saved.analysis,
     matchAnalysis: saved.matchAnalysis,
@@ -52,6 +59,7 @@ export default function JobWorkspacePage() {
   const t = useT();
   const j = t.jobs;
   const [loading, setLoading] = useState(false);
+  const [addingOpportunity, setAddingOpportunity] = useState(false);
   const [savedLoading, setSavedLoading] = useState(true);
   const [saved, setSaved] = useState<SavedWorkspace[]>([]);
   const [result, setResult] = useState<WorkspaceResult | null>(null);
@@ -72,6 +80,22 @@ export default function JobWorkspacePage() {
   useEffect(() => {
     void loadSaved();
   }, [loadSaved]);
+
+  function syncWorkspaceLink(workspaceId: string, applicationId: string) {
+    setSaved((prev) =>
+      prev.map((item) =>
+        item.id === workspaceId ? { ...item, applicationId } : item
+      )
+    );
+    setResult((prev) =>
+      prev?.workspace.id === workspaceId
+        ? {
+            ...prev,
+            workspace: { ...prev.workspace, applicationId },
+          }
+        : prev
+    );
+  }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -96,7 +120,16 @@ export default function JobWorkspacePage() {
         setError(json.error ?? j.analysisFailed);
         return;
       }
-      setResult(json);
+      setResult({
+        workspace: {
+          id: json.workspace.id,
+          jobTitle: json.workspace.jobTitle,
+          company: json.workspace.company,
+          applicationId: json.workspace.applicationId ?? null,
+        },
+        analysis: json.analysis,
+        matchAnalysis: json.matchAnalysis,
+      });
       await loadSaved();
     } catch {
       setError(j.somethingWrong);
@@ -109,6 +142,34 @@ export default function JobWorkspacePage() {
     setResult(toWorkspaceResult(item));
     setError("");
   }
+
+  async function handleAddToOpportunities() {
+    if (!result || result.workspace.applicationId) return;
+
+    setAddingOpportunity(true);
+    setError("");
+
+    try {
+      const res = await fetch(
+        `/api/candidate/job-workspaces/${result.workspace.id}/add-to-opportunities`,
+        { method: "POST" }
+      );
+      const json = await res.json();
+      if (!res.ok) {
+        setError(json.error ?? j.addToOpportunitiesFailed);
+        return;
+      }
+
+      const applicationId = json.opportunity.id as string;
+      syncWorkspaceLink(result.workspace.id, applicationId);
+    } catch {
+      setError(j.addToOpportunitiesFailed);
+    } finally {
+      setAddingOpportunity(false);
+    }
+  }
+
+  const isOnOpportunityBoard = Boolean(result?.workspace.applicationId);
 
   return (
     <DashboardLayout>
@@ -160,100 +221,133 @@ export default function JobWorkspacePage() {
         </Card>
 
         {result && (
-          <div className="grid gap-6 lg:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <CardTitle>
+          <>
+            <div className="flex flex-col gap-3 rounded-lg border bg-muted/30 p-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="font-medium">
                   {result.workspace.jobTitle} {t.common.at} {result.workspace.company}
-                </CardTitle>
-                <CardDescription>{j.extractedRequirements}</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <p className="text-sm font-medium mb-2">{j.matchScore}</p>
-                  <div className="flex items-center gap-3">
-                    <Progress value={result.matchAnalysis.matchPercentage} className="flex-1" />
-                    <span className="font-bold">{result.matchAnalysis.matchPercentage}%</span>
-                  </div>
-                </div>
-                <div>
-                  <p className="text-sm font-medium mb-2">{j.requiredSkills}</p>
-                  <div className="flex flex-wrap gap-1">
-                    {result.analysis.requiredSkills.map((s) => (
-                      <Badge key={s} variant="secondary">{s}</Badge>
-                    ))}
-                  </div>
-                </div>
-                {result.analysis.preferredSkills.length > 0 && (
-                  <div>
-                    <p className="text-sm font-medium mb-2">{j.preferredSkills}</p>
-                    <div className="flex flex-wrap gap-1">
-                      {result.analysis.preferredSkills.map((s) => (
-                        <Badge key={s} variant="outline">{s}</Badge>
-                      ))}
-                    </div>
-                  </div>
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  {j.matchScore}: {result.matchAnalysis.matchPercentage}%
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {isOnOpportunityBoard ? (
+                  <Button asChild variant="secondary" size="sm">
+                    <Link href="/candidate/opportunities">
+                      <CheckCircle2 className="mr-2 h-4 w-4" />
+                      {j.viewOpportunities}
+                    </Link>
+                  </Button>
+                ) : (
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={() => void handleAddToOpportunities()}
+                    disabled={addingOpportunity}
+                  >
+                    <Briefcase className="mr-2 h-4 w-4" />
+                    {addingOpportunity ? j.addingToOpportunities : j.addToOpportunities}
+                  </Button>
                 )}
-                {result.analysis.experienceYears && (
-                  <p className="text-sm text-muted-foreground">
-                    {interpolate(j.experienceRequired, {
-                      years: result.analysis.experienceYears,
-                    })}
-                  </p>
-                )}
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>{j.matchAnalysis}</CardTitle>
-                <CardDescription>{j.profileVsJob}</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <p className="text-sm font-medium mb-2 text-success">{j.matchingSkills}</p>
-                  <div className="flex flex-wrap gap-1">
-                    {result.matchAnalysis.matchingSkills.length > 0 ? (
-                      result.matchAnalysis.matchingSkills.map((s) => (
-                        <Badge key={s} className="bg-success/10 text-success border-success/20">{s}</Badge>
-                      ))
-                    ) : (
-                      <p className="text-sm text-muted-foreground">{j.noMatches}</p>
-                    )}
-                  </div>
-                </div>
-                <div>
-                  <p className="text-sm font-medium mb-2 text-destructive">{j.missingSkills}</p>
-                  <div className="flex flex-wrap gap-1">
-                    {result.matchAnalysis.missingSkills.length > 0 ? (
-                      result.matchAnalysis.missingSkills.map((s) => (
-                        <Badge key={s} variant="destructive">{s}</Badge>
-                      ))
-                    ) : (
-                      <p className="text-sm text-muted-foreground">{j.allSkillsMatch}</p>
-                    )}
-                  </div>
-                </div>
-                {result.matchAnalysis.suggestions.length > 0 && (
-                  <div>
-                    <p className="text-sm font-medium mb-2">{j.suggestions}</p>
-                    <ul className="space-y-1">
-                      {result.matchAnalysis.suggestions.map((s, i) => (
-                        <li key={i} className="text-sm text-muted-foreground">• {s}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-                <Button asChild variant="outline" size="sm" className="mt-2">
+                <Button asChild variant="outline" size="sm">
                   <Link
                     href={`/candidate/outreach?jobTitle=${encodeURIComponent(result.workspace.jobTitle)}&company=${encodeURIComponent(result.workspace.company)}`}
                   >
                     {j.generateOutreach}
                   </Link>
                 </Button>
-              </CardContent>
-            </Card>
-          </div>
+              </div>
+            </div>
+
+            <div className="grid gap-6 lg:grid-cols-2">
+              <Card>
+                <CardHeader>
+                  <CardTitle>
+                    {result.workspace.jobTitle} {t.common.at} {result.workspace.company}
+                  </CardTitle>
+                  <CardDescription>{j.extractedRequirements}</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <p className="text-sm font-medium mb-2">{j.matchScore}</p>
+                    <div className="flex items-center gap-3">
+                      <Progress value={result.matchAnalysis.matchPercentage} className="flex-1" />
+                      <span className="font-bold">{result.matchAnalysis.matchPercentage}%</span>
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium mb-2">{j.requiredSkills}</p>
+                    <div className="flex flex-wrap gap-1">
+                      {result.analysis.requiredSkills.map((s) => (
+                        <Badge key={s} variant="secondary">{s}</Badge>
+                      ))}
+                    </div>
+                  </div>
+                  {result.analysis.preferredSkills.length > 0 && (
+                    <div>
+                      <p className="text-sm font-medium mb-2">{j.preferredSkills}</p>
+                      <div className="flex flex-wrap gap-1">
+                        {result.analysis.preferredSkills.map((s) => (
+                          <Badge key={s} variant="outline">{s}</Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {result.analysis.experienceYears && (
+                    <p className="text-sm text-muted-foreground">
+                      {interpolate(j.experienceRequired, {
+                        years: result.analysis.experienceYears,
+                      })}
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>{j.matchAnalysis}</CardTitle>
+                  <CardDescription>{j.profileVsJob}</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <p className="text-sm font-medium mb-2 text-success">{j.matchingSkills}</p>
+                    <div className="flex flex-wrap gap-1">
+                      {result.matchAnalysis.matchingSkills.length > 0 ? (
+                        result.matchAnalysis.matchingSkills.map((s) => (
+                          <Badge key={s} className="bg-success/10 text-success border-success/20">{s}</Badge>
+                        ))
+                      ) : (
+                        <p className="text-sm text-muted-foreground">{j.noMatches}</p>
+                      )}
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium mb-2 text-destructive">{j.missingSkills}</p>
+                    <div className="flex flex-wrap gap-1">
+                      {result.matchAnalysis.missingSkills.length > 0 ? (
+                        result.matchAnalysis.missingSkills.map((s) => (
+                          <Badge key={s} variant="destructive">{s}</Badge>
+                        ))
+                      ) : (
+                        <p className="text-sm text-muted-foreground">{j.allSkillsMatch}</p>
+                      )}
+                    </div>
+                  </div>
+                  {result.matchAnalysis.suggestions.length > 0 && (
+                    <div>
+                      <p className="text-sm font-medium mb-2">{j.suggestions}</p>
+                      <ul className="space-y-1">
+                        {result.matchAnalysis.suggestions.map((s, i) => (
+                          <li key={i} className="text-sm text-muted-foreground">• {s}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          </>
         )}
 
         <Card>
@@ -290,9 +384,16 @@ export default function JobWorkspacePage() {
                             })}
                           </p>
                         </div>
-                        <Badge variant={matchPct >= 70 ? "default" : "secondary"}>
-                          {matchPct}%
-                        </Badge>
+                        <div className="flex shrink-0 items-center gap-2">
+                          {item.applicationId ? (
+                            <Badge variant="outline" className="text-xs">
+                              {j.onOpportunityBoard}
+                            </Badge>
+                          ) : null}
+                          <Badge variant={matchPct >= 70 ? "default" : "secondary"}>
+                            {matchPct}%
+                          </Badge>
+                        </div>
                       </button>
                     </li>
                   );
