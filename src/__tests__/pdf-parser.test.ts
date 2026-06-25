@@ -20,6 +20,21 @@ ADDITIONAL INFORMATION
 ● Certifications: Apollo Graph Developer - Associate Certification (2025), BPMN (2017)
 ● Github Portfolio: https://github.com/cvelazqueze`;
 
+const WRAPPED_BULLET_RESUME = `CESAR VELAZQUEZ
+Fullstack Engineer
+PROFESSIONAL EXPERIENCE
+PWC — Remote APRIL 2025 - PRESENT
+Sr. Associate - Lead Fullstack Engineer
+● Designed and developed scalable backend and full-stack solutions using Node.js,
+● TypeScript,
+● Delivered mid-to-large features independently, collaborating with stakeholders to
+● refine requirements and ship production-ready code.
+● Mentored mid-level and junior engineers through code reviews, design discussions,
+● and pair programming sessions.
+EDUCATION
+INSTITUTO TECNOLOGICO DE LA LAGUNA
+Master of Science  JAN 2016 - DEC 2017`;
+
 describe("PDF Resume Parser", () => {
   it("extracts header and contact info", () => {
     const parsed = parseResumeText(CESAR_RESUME);
@@ -48,5 +63,16 @@ describe("PDF Resume Parser", () => {
     expect(parsed.education[0].institution).toContain("TECNOLOGICO");
     expect(parsed.certifications.length).toBeGreaterThanOrEqual(1);
     expect(parsed.github).toContain("github.com");
+  });
+
+  it("merges wrapped PDF bullets that repeat bullet markers on each line", () => {
+    const parsed = parseResumeText(WRAPPED_BULLET_RESUME);
+    const pwc = parsed.experiences.find((e) => e.company.toUpperCase().includes("PWC"));
+    expect(pwc).toBeDefined();
+    expect(pwc!.bullets.length).toBe(3);
+    expect(pwc!.bullets[0]).toContain("Node.js");
+    expect(pwc!.bullets[0]).toContain("TypeScript");
+    expect(pwc!.bullets[1]).toContain("refine requirements");
+    expect(pwc!.bullets[2]).toContain("pair programming");
   });
 });

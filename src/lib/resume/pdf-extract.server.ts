@@ -8,5 +8,9 @@ const pdfParse = require("pdf-parse") as (
 
 export async function extractPdfText(buffer: Buffer): Promise<string> {
   const data = await pdfParse(buffer);
-  return data.text;
+  return data.text
+    .replace(/\r\n/g, "\n")
+    .replace(/\u00a0/g, " ")
+    .replace(/[^\S\n]+/g, " ")
+    .trim();
 }

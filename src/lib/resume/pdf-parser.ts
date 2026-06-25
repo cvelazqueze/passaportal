@@ -32,6 +32,7 @@ export interface ParsedResume {
   firstName: string;
   lastName: string;
   professionalTitle?: string;
+  professionalSummary?: string;
   email?: string;
   phone?: string;
   linkedIn?: string;
@@ -43,15 +44,16 @@ export interface ParsedResume {
   technologies: string[];
 }
 
-const SECTION_HEADERS = [
-  "PROFESSIONAL EXPERIENCE",
-  "WORK EXPERIENCE",
-  "EXPERIENCE",
-  "EDUCATION",
-  "ADDITIONAL INFORMATION",
-  "CERTIFICATIONS",
-  "SKILLS",
+const SECTION_HEADERS: { pattern: RegExp; key: string }[] = [
+  { pattern: /^PROFESSIONAL\s+SUMMARY|^SUMMARY|^PROFILE|^ABOUT\s+ME/i, key: "summary" },
+  { pattern: /^PROFESSIONAL\s+EXPERIENCE|^WORK\s+EXPERIENCE|^EMPLOYMENT|^EXPERIENCE|^EXPERIENCIA/i, key: "experience" },
+  { pattern: /^EDUCATION|^EDUCACI[ÓO]N|^FORMACI[ÓO]N/i, key: "education" },
+  { pattern: /^SKILLS|^TECHNICAL\s+SKILLS|^CORE\s+COMPETENCIES|^HABILIDADES/i, key: "skills" },
+  { pattern: /^CERTIFICATIONS|^ADDITIONAL\s+INFORMATION|^LANGUAGES/i, key: "additional" },
 ];
+
+const DATE_RANGE_RE =
+  /((?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|SEPT|OCT|NOV|DEC)[A-Z]*\.?\s+\d{4}|\d{1,2}\/\d{4}|\d{4})\s*[-–—]\s*(?:PRESENT|CURRENT|(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|SEPT|OCT|NOV|DEC)[A-Z]*\.?\s+\d{4}|\d{1,2}\/\d{4}|\d{4})/i;
 
 const MONTH_MAP: Record<string, number> = {
   jan: 0, january: 0,
@@ -80,16 +82,14 @@ const PHONE_RE = /\+?\d[\d\s().-]{8,}\d/;
 const LINKEDIN_RE = /linkedin\.com\/in\/[\w-]+/i;
 const GITHUB_PATTERN = /(?:github\.com\/[\w-]+|https?:\/\/github\.com\/[\w-]+)/i;
 
-export function parseResumeText(rawText: string): ParsedResume {
-  const text = rawText
-    .replace(/\r\n/g, "\n")
-    .replace(/–/g, "-")
-    .replace(/\u2013/g, "-");
+const EXP_HEADER_RE =
+  /^(.+?)\s*(?:—|-)\s*(.+?)(?:\s+VIA\s+.+?)?\s+((?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|SEPT|OCT|NOV|DEC)[A-Z]*\.?\s+\d{4}\s*-\s*(?:PRESENT|CURRENT|(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|SEPT|OCT|NOV|DEC)[A-Z]*\.?\s+\d{4}))/i;
 
-  const lines = text
-    .split("\n")
-    .map((l) => l.trim())
-    .filter((l) => l && !l.match(/^-- \d+ of \d+ --$/));
+const EXP_HEADER_SIMPLE_RE =
+  /^(.+?)\s+((?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|SEPT|OCT|NOV|DEC)[A-Z]*\.?\s+\d{4}\s*-\s*(?:PRESENT|CURRENT|(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|SEPT|OCT|NOV|DEC)[A-Z]*\.?\s+\d{4}))/i;
+
+export function parseResumeText(rawText: string): ParsedResume {
+  const lines = normalizePdfLines(rawText);
 
   const result: ParsedResume = {
     firstName: "",
@@ -110,7 +110,7 @@ export function parseResumeText(rawText: string): ParsedResume {
   result.lastName = nameParts.slice(1).map(capitalize).join(" ");
 
   let idx = 1;
-  if (lines[idx] && !isContactLine(lines[idx]) && !isSectionHeader(lines[idx])) {
+  if (lines[idx] && !isContactLine(lines[idx]) && !matchSectionHeader(lines[idx])) {
     result.professionalTitle = lines[idx];
     idx++;
   }
@@ -123,22 +123,72 @@ export function parseResumeText(rawText: string): ParsedResume {
   // Split into sections
   const sections = splitSections(lines.slice(idx));
 
+  if (sections.summary?.length) {
+    result.professionalSummary = sections.summary.join(" ").replace(/\s+/g, " ").trim();
+  }
   if (sections.experience) {
     result.experiences = parseExperienceSection(sections.experience);
   }
   if (sections.education) {
     result.education = parseEducationSection(sections.education);
   }
+  if (sections.skills?.length) {
+    result.skills = parseSkillsSection(sections.skills);
+  }
   if (sections.additional) {
     parseAdditionalSection(sections.additional, result);
   }
 
-  result.technologies = extractTechnologies(
-    result.experiences.flatMap((e) => e.bullets)
-  );
-  result.skills = [...result.technologies];
+  if (result.skills.length === 0) {
+    result.skills = extractTechnologies(
+      result.experiences.flatMap((e) => e.bullets)
+    );
+  }
+  result.technologies = [
+    ...new Set([
+      ...result.skills,
+      ...extractTechnologies(result.experiences.flatMap((e) => e.bullets)),
+    ]),
+  ];
+  if (result.skills.length === 0) {
+    result.skills = [...result.technologies];
+  }
 
   return result;
+}
+
+function normalizePdfLines(rawText: string): string[] {
+  const rawLines = rawText
+    .replace(/\r\n/g, "\n")
+    .replace(/–/g, "-")
+    .replace(/\u2013/g, "-")
+    .replace(/\u00a0/g, " ")
+    .split("\n")
+    .map((l) => l.replace(/\s+/g, " ").trim())
+    .filter((l) => l && !l.match(/^-- \d+ of \d+ --$/));
+
+  const merged: string[] = [];
+
+  for (const line of rawLines) {
+    const prev = merged[merged.length - 1];
+    if (prev && shouldJoinPdfLines(prev, line)) {
+      merged[merged.length - 1] = `${prev} ${line}`;
+    } else {
+      merged.push(line);
+    }
+  }
+
+  return merged;
+}
+
+function shouldJoinPdfLines(prev: string, current: string): boolean {
+  if (matchSectionHeader(current) || matchSectionHeader(prev)) return false;
+  if (isBullet(current) || isBullet(prev)) return false;
+  if (DATE_RANGE_RE.test(current) || EXP_HEADER_RE.test(current)) return false;
+  // Continuation of a wrapped bullet or sentence (PDF line breaks mid-phrase)
+  if (/^[a-z(,]/.test(current)) return true;
+  if (/,\s*$/.test(prev) && !/[.!?:]$/.test(prev)) return true;
+  return false;
 }
 
 function splitSections(lines: string[]) {
@@ -158,23 +208,18 @@ function splitSections(lines: string[]) {
   }
 
   return {
-    experience: sections.experience ?? sections["work experience"],
+    summary: sections.summary,
+    experience: sections.experience,
     education: sections.education,
-    additional: sections.additional ?? sections.certifications,
+    skills: sections.skills,
+    additional: sections.additional,
   };
 }
 
 function matchSectionHeader(line: string): string | null {
-  const upper = line.toUpperCase().trim();
-  for (const h of SECTION_HEADERS) {
-    if (upper === h || upper.startsWith(h)) {
-      if (h.includes("EXPERIENCE") && !h.includes("PROFESSIONAL")) return "experience";
-      if (h === "PROFESSIONAL EXPERIENCE" || h === "WORK EXPERIENCE") return "experience";
-      if (h === "EXPERIENCE") return "experience";
-      if (h === "EDUCATION") return "education";
-      if (h === "ADDITIONAL INFORMATION" || h === "CERTIFICATIONS") return "additional";
-      if (h === "SKILLS") return "skills";
-    }
+  const normalized = line.trim().replace(/:$/, "");
+  for (const { pattern, key } of SECTION_HEADERS) {
+    if (pattern.test(normalized)) return key;
   }
   return null;
 }
@@ -206,62 +251,209 @@ function parseContactLine(line: string, result: ParsedResume) {
   if (github) result.github = normalizeUrl(github[0], "https://");
 }
 
-const EXP_HEADER_RE =
-  /^(.+?)\s*(?:—|-)\s*(.+?)(?:\s+VIA\s+.+?)?\s+((?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)[A-Z]*\.?\s+\d{4}\s*-\s*(?:PRESENT|(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)[A-Z]*\.?\s+\d{4}))/i;
-
-const EXP_HEADER_SIMPLE_RE =
-  /^(.+?)\s+((?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)[A-Z]*\.?\s+\d{4}\s*-\s*(?:PRESENT|(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)[A-Z]*\.?\s+\d{4}))/i;
-
 function parseExperienceSection(lines: string[]): ParsedExperience[] {
+  const coalesced = coalesceExperienceLines(lines);
   const experiences: ParsedExperience[] = [];
   let current: ParsedExperience | null = null;
+  let pendingCompanyLine: string | null = null;
 
-  for (const line of lines) {
+  function pushCurrent() {
+    if (current) {
+      current.bullets = mergeFragmentBullets(current.bullets);
+      current.technologies = [...new Set(current.technologies)];
+      experiences.push(current);
+      current = null;
+    }
+    pendingCompanyLine = null;
+  }
+
+  function startExperience(company: string, location: string | undefined, dateText: string) {
+    pushCurrent();
+    const dates = parseDateRange(dateText);
+    current = {
+      company: cleanCompany(company),
+      position: "",
+      location,
+      startDate: dates.start,
+      endDate: dates.end,
+      isCurrent: dates.isCurrent,
+      bullets: [],
+      technologies: [],
+    };
+  }
+
+  for (const line of coalesced) {
     const normalized = line.replace(/\t/g, "  ").trim();
+    if (!normalized) continue;
+
     const headerMatch =
       normalized.match(EXP_HEADER_RE) ?? normalized.match(EXP_HEADER_SIMPLE_RE);
 
     if (headerMatch) {
-      if (current) experiences.push(current);
-      const company = cleanCompany(headerMatch[1]);
       const location = headerMatch[2]?.trim();
-      const dates = parseDateRange(headerMatch[3] ?? headerMatch[2]);
+      startExperience(
+        headerMatch[1],
+        location && !DATE_RANGE_RE.test(location) ? location : undefined,
+        headerMatch[3] ?? headerMatch[2]
+      );
+      continue;
+    }
 
-      current = {
-        company,
-        position: "",
-        location: location && !location.match(/JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC/i)
-          ? location
-          : undefined,
-        startDate: dates.start,
-        endDate: dates.end,
-        isCurrent: dates.isCurrent,
-        bullets: [],
-        technologies: [],
-      };
+    const inlineDate = normalized.match(DATE_RANGE_RE);
+    if (inlineDate) {
+      const dateText = inlineDate[1];
+      const beforeDates = normalized.slice(0, inlineDate.index).trim();
+      const companyPart = pendingCompanyLine ?? beforeDates;
+      const locationPart =
+        pendingCompanyLine && beforeDates
+          ? beforeDates.replace(/^(?:—|-)\s*/, "")
+          : undefined;
+
+      if (companyPart) {
+        startExperience(companyPart, locationPart, dateText);
+        pendingCompanyLine = null;
+        continue;
+      }
+    }
+
+    if (DATE_RANGE_RE.test(normalized) && pendingCompanyLine) {
+      startExperience(pendingCompanyLine, undefined, normalized.match(DATE_RANGE_RE)![1]);
+      continue;
+    }
+
+    if (!current && !isBullet(normalized) && !DATE_RANGE_RE.test(normalized)) {
+      pendingCompanyLine = normalized;
       continue;
     }
 
     if (!current) continue;
+    const exp: ParsedExperience = current;
 
     if (isBullet(normalized)) {
-      const bullet = normalized.replace(/^[●•\-*]\s*/, "").trim();
+      const bullet = stripBullet(normalized);
       if (bullet) {
-        current.bullets.push(bullet);
-        current.technologies.push(...extractTechnologies([bullet]));
+        exp.bullets.push(bullet);
+        exp.technologies.push(...extractTechnologies([bullet]));
       }
-    } else if (!current.position && normalized.length > 0) {
-      current.position = normalized;
+      continue;
+    }
+
+    if (!exp.position && !isBullet(normalized) && !DATE_RANGE_RE.test(normalized)) {
+      exp.position = normalized;
+      continue;
+    }
+
+    if (exp.bullets.length > 0) {
+      exp.bullets[exp.bullets.length - 1] += ` ${normalized}`;
+      exp.technologies.push(...extractTechnologies([normalized]));
+    } else if (normalized.length > 20) {
+      exp.bullets.push(normalized);
+      exp.technologies.push(...extractTechnologies([normalized]));
     }
   }
 
-  if (current) experiences.push(current);
+  pushCurrent();
+  return experiences;
+}
 
-  for (const exp of experiences) {
-    exp.technologies = [...new Set(exp.technologies)];
+function parseSkillsSection(lines: string[]): string[] {
+  const skills = new Set<string>();
+  for (const line of lines) {
+    const normalized = line.trim();
+    if (!normalized) continue;
+    const text = isBullet(normalized) ? stripBullet(normalized) : normalized;
+    for (const part of text.split(/[,;|]/)) {
+      const skill = part.trim();
+      if (skill.length > 1 && skill.length < 50) skills.add(skill);
+    }
+  }
+  return Array.from(skills);
+}
+
+function stripBullet(line: string): string {
+  return line.replace(/^([●•\-*◦▪○]|\d+\.)\s*/, "").trim();
+}
+
+function isCompleteSentence(text: string): boolean {
+  return /[.!?]["']?\s*$/.test(text.trim());
+}
+
+function looksLikeNewBullet(text: string): boolean {
+  const t = text.trim();
+  if (t.length < 20) return false;
+  return /^(Designed|Developed|Delivered|Led|Mentored|Built|Implemented|Created|Managed|Optimized|Collaborated|Spearheaded|Architected|Established|Improved|Reduced|Increased|Automated|Maintained|Coordinated|Supported|Conducted|Analyzed|Deployed|Integrated|Refactored|Championed|Drove|Facilitated|Streamlined|Executed|Achieved|Partnered|Worked|Provided|Responsible|Assisted|Contributed)\b/i.test(
+    t
+  );
+}
+
+function shouldMergeBulletFragment(prev: string, current: string): boolean {
+  const p = prev.trim();
+  const c = current.trim();
+  if (!p || !c) return false;
+
+  if (looksLikeNewBullet(c)) return false;
+
+  if (/^[a-z(,]/.test(c)) return true;
+  if (c.length <= 5) return true;
+  if (
+    /^(and|or|to|with|for|via|using|through|refine)\b/i.test(c) &&
+    c.length < 50
+  ) {
+    return true;
+  }
+  if (/[,;]$/.test(p) && c.split(/\s+/).length <= 4) return true;
+
+  return false;
+}
+
+function mergeFragmentBullets(bullets: string[]): string[] {
+  const merged: string[] = [];
+  for (const bullet of bullets) {
+    const trimmed = bullet.trim();
+    if (!trimmed) continue;
+    const prev = merged[merged.length - 1];
+    if (prev && shouldMergeBulletFragment(prev, trimmed)) {
+      merged[merged.length - 1] = `${prev} ${trimmed}`;
+    } else {
+      merged.push(trimmed);
+    }
+  }
+  return merged;
+}
+
+/** PDFs often repeat bullet markers on every wrapped line — merge before parsing. */
+function coalesceExperienceLines(lines: string[]): string[] {
+  const result: string[] = [];
+
+  for (const line of lines) {
+    const normalized = line.replace(/\t/g, " ").trim();
+    if (!normalized) continue;
+
+    const prev = result[result.length - 1];
+    if (!prev) {
+      result.push(normalized);
+      continue;
+    }
+
+    const prevText = isBullet(prev) ? stripBullet(prev) : prev;
+    const currentText = isBullet(normalized) ? stripBullet(normalized) : normalized;
+    const prevIsBullet = isBullet(prev);
+
+    const canMerge =
+      shouldMergeBulletFragment(prevText, currentText) &&
+      (prevIsBullet || isBullet(normalized) || /^[a-z(,]/.test(currentText));
+
+    if (canMerge) {
+      const combined = `${prevText} ${currentText}`;
+      result[result.length - 1] =
+        prevIsBullet || isBullet(normalized) ? `● ${combined}` : combined;
+      continue;
+    }
+
+    result.push(normalized);
   }
 
-  return experiences;
+  return result;
 }
 
 function parseEducationSection(lines: string[]): ParsedEducation[] {
@@ -349,11 +541,17 @@ function parseDateRange(range: string): {
   isCurrent: boolean;
 } {
   const parts = range.split(/\s*-\s*/i);
-  const start = parseMonthYear(parts[0]?.trim() ?? "") ?? new Date();
+  const start = parseMonthYear(parts[0]?.trim() ?? "") ?? parseYearOnly(parts[0]?.trim() ?? "") ?? new Date();
   const endPart = parts[1]?.trim().toUpperCase() ?? "";
-  const isCurrent = endPart === "PRESENT";
-  const end = isCurrent ? null : parseMonthYear(parts[1]?.trim() ?? "");
+  const isCurrent = endPart === "PRESENT" || endPart === "CURRENT";
+  const end = isCurrent ? null : parseMonthYear(parts[1]?.trim() ?? "") ?? parseYearOnly(parts[1]?.trim() ?? "");
   return { start, end, isCurrent };
+}
+
+function parseYearOnly(token: string): Date | null {
+  const match = token.match(/\b(19|20)\d{2}\b/);
+  if (!match) return null;
+  return new Date(parseInt(match[0], 10), 0, 1);
 }
 
 function parseMonthYear(token: string): Date | null {
@@ -365,7 +563,7 @@ function parseMonthYear(token: string): Date | null {
 }
 
 function isBullet(line: string): boolean {
-  return /^[●•\-*]\s/.test(line);
+  return /^([●•\-*◦▪○]|\d+\.)\s/.test(line);
 }
 
 function cleanCompany(raw: string): string {

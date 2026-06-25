@@ -30,6 +30,7 @@ export async function applyParsedResumeToProfile(
       where: { id: talentPassportId },
       data: {
         professionalTitle: parsed.professionalTitle ?? null,
+        professionalSummary: parsed.professionalSummary ?? null,
         phone: parsed.phone ?? null,
         linkedIn: normalizeOptionalUrl(parsed.linkedIn),
         github: normalizeOptionalUrl(parsed.github),
